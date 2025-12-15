@@ -1,0 +1,194 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model usuarios {
+  id                    Int                    @id @default(autoincrement())
+  email                 String                 @unique @db.VarChar(255)
+  password_hash         String                 @db.VarChar(255)
+  nombre                String                 @db.VarChar(100)
+  apellido              String                 @db.VarChar(100)
+  telefono              String?                @db.VarChar(20)
+  fecha_registro        DateTime               @default(now())
+  activo                Boolean                @default(true)
+  administrador         administradores?
+  direcciones           direcciones[]
+  fotos                 fotos[]
+  pedidos               pedidos[]
+  stores stores?
+}
+
+model direcciones {
+  id             Int       @id @default(autoincrement())
+  usuario_id     Int
+  alias          String    @db.VarChar(50)
+  direccion      String    @db.Text
+  ciudad         String    @db.VarChar(100)
+  codigo_postal  String    @db.VarChar(20)
+  provincia      String    @db.VarChar(100)
+  pais           String    @default("España") @db.VarChar(100)
+  predeterminada Boolean   @default(false)
+  usuario        usuarios  @relation(fields: [usuario_id], references: [id])
+  pedidos        pedidos[]
+
+  @@index([usuario_id], map: "direcciones_usuario_id_fkey")
+}
+
+model categorias {
+  id             Int                     @id @default(autoincrement())
+  nombre         String                  @db.VarChar(100)
+  descripcion    String?                 @db.Text
+  activo         Boolean                 @default(true)
+  fecha_creacion DateTime                @default(now())
+  paquetes       paquetes_predefinidos[]
+}
+
+model tipo_paquete {
+  id          Int                     @id
+  nombre      String                  @db.VarChar(50)
+  descripcion String?                 @db.Text
+  paquetes    paquetes_predefinidos[]
+}
+
+model paquetes_predefinidos {
+  id               Int            @id @default(autoincrement())
+  tipo_paquete_id  Int?
+  nombre           String         @db.VarChar(100)
+  cantidad_fotos   Int
+  precio           Decimal        @db.Decimal(10, 2)
+  descripcion      String?        @db.Text
+  alto_foto        Decimal        @default(15.00) @db.Decimal(5, 2)
+  ancho_foto       Decimal        @default(10.00) @db.Decimal(5, 2)
+  categoria_id     Int?
+  estado           Boolean        @default(true)
+  resolucion_foto  Int            @default(300)
+  items_pedido_new items_pedido[] @relation("items_pedido_to_paquetes_predefinidos_new")
+  items_pedido_old items_pedido[] @relation("items_pedido_to_paquetes_predefinidos_old")
+  categoria        categorias?    @relation(fields: [categoria_id], references: [id])
+  tipo_paquete     tipo_paquete?   @relation(fields: [tipo_paquete_id], references: [id])
+
+  @@index([categoria_id], map: "paquetes_predefinidos_categoria_id_fkey")
+  @@index([tipo_paquete_id], map: "paquetes_predefinidos_tipo_paquete_id_fkey")
+}
+
+model estados_pedido {
+  id          Int       @id
+  nombre      String    @db.VarChar(50)
+  descripcion String?   @db.Text
+  pedidos     pedidos[]
+}
+
+model pedidos {
+  id                   Int                @id @default(autoincrement())
+  usuario_id           Int
+  direccion_id         Int
+  estado_id            Int                @default(1)
+  fecha_creacion       DateTime           @default(now())
+  fecha_actualizacion  DateTime           @default(now())
+  total                Decimal            @db.Decimal(10, 2)
+  notas                String?            @db.Text
+  email_cliente        String             @db.VarChar(255)
+  estado_pago          String             @default("pending")
+  estado_personalizado String             @default("Pendiente")
+  fecha_pedido         DateTime           @default(now())
+  id_pago_stripe       String?            @db.VarChar(255)
+  id_sesion_stripe     String?            @db.VarChar(255)
+  iva                  Decimal            @db.Decimal(10, 2)
+  nombre_cliente       String             @db.VarChar(255)
+  subtotal             Decimal            @db.Decimal(10, 2)
+  telefono_cliente     String?            @db.VarChar(50)
+  calendarios          calendario_fotos[]
+  fotos                fotos[]
+  items                items_pedido[]
+  direccion            direcciones        @relation(fields: [direccion_id], references: [id])
+  estado               estados_pedido     @relation(fields: [estado_id], references: [id])
+  usuario              usuarios           @relation(fields: [usuario_id], references: [id])
+
+  @@index([direccion_id], map: "pedidos_direccion_id_fkey")
+  @@index([estado_id], map: "pedidos_estado_id_fkey")
+  @@index([usuario_id], map: "pedidos_usuario_id_fkey")
+}
+
+model items_pedido {
+  id                     Int                    @id @default(autoincrement())
+  pedido_id              Int
+  tipo_item              String                 @db.VarChar(20)
+  paquete_predefinido_id Int?
+  cantidad_fotos         Int
+  precio_unitario        Decimal                @db.Decimal(10, 2)
+  subtotal               Decimal                @db.Decimal(10, 2)
+  cantidad               Int?                   @default(1)
+  categoria_paquete      String?                @db.VarChar(100)
+  nombre_paquete         String?                @db.VarChar(255)
+  num_fotos_requeridas   Int?
+  paquete_id             Int?
+  calendarios            calendario_fotos[]
+  fotos                  fotos[]
+  paquete                paquetes_predefinidos? @relation("items_pedido_to_paquetes_predefinidos_new", fields: [paquete_id], references: [id])
+  paquete_predefinido    paquetes_predefinidos? @relation("items_pedido_to_paquetes_predefinidos_old", fields: [paquete_predefinido_id], references: [id])
+  pedido                 pedidos                @relation(fields: [pedido_id], references: [id])
+
+  @@index([paquete_id], map: "items_pedido_paquete_id_fkey")
+  @@index([paquete_predefinido_id], map: "items_pedido_paquete_predefinido_id_fkey")
+  @@index([pedido_id], map: "items_pedido_pedido_id_fkey")
+}
+
+model fotos {
+  id                  Int                @id @default(autoincrement())
+  usuario_id          Int
+  pedido_id           Int?
+  item_pedido_id      Int
+  nombre_archivo      String             @db.VarChar(255)
+  ruta_almacenamiento String             @db.VarChar(500)
+  tamaño_archivo      Int
+  ancho_foto          Decimal?           @db.Decimal(5, 2)  // Ancho heredado del paquete
+  alto_foto           Decimal?           @db.Decimal(5, 2)   // Alto heredado del paquete
+  resolucion_foto     Int?               // Resolución heredada del paquete
+  fecha_subida        DateTime           @default(now())
+  procesada           Boolean            @default(false)
+  calendarios         calendario_fotos[]
+  item_pedido         items_pedido       @relation(fields: [item_pedido_id], references: [id])
+  pedido              pedidos?           @relation(fields: [pedido_id], references: [id])
+  usuario             usuarios           @relation(fields: [usuario_id], references: [id])
+
+  @@index([item_pedido_id], map: "fotos_item_pedido_id_fkey")
+  @@index([pedido_id], map: "fotos_pedido_id_fkey")
+  @@index([usuario_id], map: "fotos_usuario_id_fkey")
+}
+
+model calendario_fotos {
+  id             Int          @id @default(autoincrement())
+  pedido_id      Int
+  item_pedido_id Int
+  mes            Int
+  foto_id        Int
+  foto           fotos        @relation(fields: [foto_id], references: [id])
+  item_pedido    items_pedido @relation(fields: [item_pedido_id], references: [id])
+  pedido         pedidos      @relation(fields: [pedido_id], references: [id])
+
+  @@index([foto_id], map: "calendario_fotos_foto_id_fkey")
+  @@index([item_pedido_id], map: "calendario_fotos_item_pedido_id_fkey")
+  @@index([pedido_id], map: "calendario_fotos_pedido_id_fkey")
+}
+
+model administradores {
+  id           Int      @id @default(autoincrement())
+  usuario_id   Int      @unique
+  nivel_acceso Int      @default(1)
+  activo       Boolean  @default(true)
+  usuario      usuarios @relation(fields: [usuario_id], references: [id])
+}
+
+model stores {
+  id                 Int      @id @default(autoincrement())
+  usuario_id         Int      @unique
+  codigo_empleado    String   @unique @db.VarChar(50)
+  fecha_contratacion DateTime @default(now())
+  activo             Boolean  @default(true)
+  usuario            usuarios @relation(fields: [usuario_id], references: [id])
+}
