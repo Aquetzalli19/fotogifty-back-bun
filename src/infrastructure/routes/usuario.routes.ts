@@ -96,6 +96,112 @@ const usuarioRoutes = (router: Router): void => {
 
   /**
    * @swagger
+   * /api/usuarios/admin:
+   *   post:
+   *     summary: Crear un nuevo administrador
+   *     tags: [Usuarios]
+   *     requestBody:
+   *       required: true
+   *       content:
+   *         application/json:
+   *           schema:
+   *             type: object
+   *             required:
+   *               - email
+   *               - password
+   *               - nombre
+   *               - apellido
+   *             properties:
+   *               email:
+   *                 type: string
+   *                 format: email
+   *                 example: "admin@ejemplo.com"
+   *               password:
+   *                 type: string
+   *                 format: password
+   *                 example: "password123"
+   *               nombre:
+   *                 type: string
+   *                 example: "Juan"
+   *               apellido:
+   *                 type: string
+   *                 example: "Pérez"
+   *               telefono:
+   *                 type: string
+   *                 example: "+34612345678"
+   *               nivel_acceso:
+   *                 type: integer
+   *                 description: "1 para ADMIN, 2 para SUPER_ADMIN"
+   *                 example: 1
+   *     responses:
+   *       201:
+   *         description: Administrador creado exitosamente
+   *       400:
+   *         description: Datos de entrada inválidos
+   *       409:
+   *         description: El usuario ya existe
+   *       500:
+   *         description: Error interno del servidor
+   */
+  router.post('/usuarios/admin', (req, res) =>
+    usuarioController.crearAdmin(req, res)
+  );
+
+  /**
+   * @swagger
+   * /api/usuarios/store:
+   *   post:
+   *     summary: Crear un nuevo vendedor de ventanilla
+   *     tags: [Usuarios]
+   *     requestBody:
+   *       required: true
+   *       content:
+   *         application/json:
+   *           schema:
+   *             type: object
+   *             required:
+   *               - email
+   *               - password
+   *               - nombre
+   *               - apellido
+   *               - codigo_empleado
+   *             properties:
+   *               email:
+   *                 type: string
+   *                 format: email
+   *                 example: "vendedor@tienda.com"
+   *               password:
+   *                 type: string
+   *                 format: password
+   *                 example: "password123"
+   *               nombre:
+   *                 type: string
+   *                 example: "María"
+   *               apellido:
+   *                 type: string
+   *                 example: "García"
+   *               telefono:
+   *                 type: string
+   *                 example: "+34612345678"
+   *               codigo_empleado:
+   *                 type: string
+   *                 example: "EMP001"
+   *     responses:
+   *       201:
+   *         description: Vendedor de ventanilla creado exitosamente
+   *       400:
+   *         description: Datos de entrada inválidos
+   *       409:
+   *         description: El usuario ya existe
+   *       500:
+   *         description: Error interno del servidor
+   */
+  router.post('/usuarios/store', (req, res) =>
+    usuarioController.crearStore(req, res)
+  );
+
+  /**
+   * @swagger
    * /api/usuarios/{id}:
    *   get:
    *     summary: Obtener un usuario por ID

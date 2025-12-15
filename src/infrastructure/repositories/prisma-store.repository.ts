@@ -169,17 +169,26 @@ export class PrismaStoreRepository implements StoreRepositoryPort {
     }
 
     try {
-      // Cambiamos el estado activo a false en lugar de eliminar físicamente
-      await prisma.stores.update({
+      // Primero obtenemos el usuario_id del store
+      const store = await prisma.stores.findUnique({
         where: { id },
-        data: {
-          usuario: {
-            update: {
-              activo: false
-            }
-          }
-        }
+        select: { usuario_id: true }
       });
+
+      if (!store) {
+        return false;
+      }
+
+      // Eliminamos el registro de stores
+      await prisma.stores.delete({
+        where: { id }
+      });
+
+      // Luego eliminamos el usuario relacionado
+      await prisma.usuarios.delete({
+        where: { id: store.usuario_id }
+      });
+
       return true;
     } catch (error) {
       console.error('Error al eliminar store:', error);

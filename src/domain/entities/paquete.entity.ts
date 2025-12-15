@@ -2,6 +2,7 @@ export interface Paquete {
   id?: number;
   nombre: string;
   categoria_id?: number;
+  categoria_nombre?: string;
   descripcion?: string;
   cantidad_fotos: number;
   precio: number;
@@ -15,6 +16,7 @@ export class PaqueteEntity implements Paquete {
   public id?: number;
   public nombre: string;
   public categoria_id?: number;
+  public categoria_nombre?: string;
   public descripcion?: string;
   public cantidad_fotos: number;
   public precio: number;

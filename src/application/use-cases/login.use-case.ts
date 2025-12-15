@@ -32,8 +32,16 @@ export class LoginUseCase {
       }
 
       // Para login de admin, permitir tanto admin como super_admin
-      if (tipoSolicitado === 'admin' && 
+      if (tipoSolicitado === 'admin' &&
           (usuario.tipo !== TipoUsuario.ADMIN && usuario.tipo !== TipoUsuario.SUPER_ADMIN)) {
+        return {
+          success: false,
+          message: 'Credenciales inválidas'
+        };
+      }
+
+      // Para login de vendedor de ventanilla (store)
+      if (tipoSolicitado === 'vendedor_ventanilla' && usuario.tipo !== TipoUsuario.VENDEDOR_VENTANILLA) {
         return {
           success: false,
           message: 'Credenciales inválidas'

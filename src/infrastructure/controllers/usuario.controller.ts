@@ -79,6 +79,147 @@ export class UsuarioController {
     }
   }
 
+  async crearAdmin(req: Request, res: Response): Promise<void> {
+    try {
+      const { email, password, nombre, apellido, telefono, nivel_acceso } = req.body;
+
+      // Validaciones básicas
+      if (!email || !password || !nombre || !apellido) {
+        res.status(400).json({
+          success: false,
+          message: 'Email, password, nombre y apellido son requeridos'
+        });
+        return;
+      }
+
+      if (password.length < 6) {
+        res.status(400).json({
+          success: false,
+          message: 'La contraseña debe tener al menos 6 caracteres'
+        });
+        return;
+      }
+
+      // Validar formato de email
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(email)) {
+        res.status(400).json({
+          success: false,
+          message: 'Formato de email inválido'
+        });
+        return;
+      }
+
+      // Hashear la contraseña
+      const password_hash = await PasswordService.hashPassword(password);
+
+      // Determinar el tipo de admin (1 = ADMIN, 2 = SUPER_ADMIN)
+      const tipoAdmin = nivel_acceso === 2 ? TipoUsuario.SUPER_ADMIN : TipoUsuario.ADMIN;
+
+      // Crear usuario admin
+      const nuevoUsuario = UsuarioEntity.create(
+        email,
+        password_hash,
+        nombre,
+        apellido,
+        tipoAdmin,
+        telefono
+      );
+
+      const result = await this.crearUsuarioUseCase.execute(nuevoUsuario);
+
+      if (result.success) {
+        // No devolver la contraseña hasheada en la respuesta
+        const { password_hash: _, ...usuarioSinPassword } = result.data!;
+        res.status(201).json({
+          success: true,
+          data: usuarioSinPassword,
+          message: 'Administrador creado exitosamente'
+        });
+      } else {
+        res.status(result.error?.includes('UNIQUE') ? 409 : 500).json({
+          success: false,
+          message: result.message || 'Error al crear el administrador'
+        });
+      }
+    } catch (error: any) {
+      console.error('Error creating admin:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Error interno del servidor'
+      });
+    }
+  }
+
+  async crearStore(req: Request, res: Response): Promise<void> {
+    try {
+      const { email, password, nombre, apellido, telefono, codigo_empleado } = req.body;
+
+      // Validaciones básicas
+      if (!email || !password || !nombre || !apellido || !codigo_empleado) {
+        res.status(400).json({
+          success: false,
+          message: 'Email, password, nombre, apellido y codigo_empleado son requeridos'
+        });
+        return;
+      }
+
+      if (password.length < 6) {
+        res.status(400).json({
+          success: false,
+          message: 'La contraseña debe tener al menos 6 caracteres'
+        });
+        return;
+      }
+
+      // Validar formato de email
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(email)) {
+        res.status(400).json({
+          success: false,
+          message: 'Formato de email inválido'
+        });
+        return;
+      }
+
+      // Hashear la contraseña
+      const password_hash = await PasswordService.hashPassword(password);
+
+      // Crear usuario store
+      const nuevoUsuario = UsuarioEntity.create(
+        email,
+        password_hash,
+        nombre,
+        apellido,
+        TipoUsuario.VENDEDOR_VENTANILLA,
+        telefono
+      );
+
+      const result = await this.crearUsuarioUseCase.execute(nuevoUsuario);
+
+      if (result.success) {
+        // No devolver la contraseña hasheada en la respuesta
+        const { password_hash: _, ...usuarioSinPassword } = result.data!;
+        res.status(201).json({
+          success: true,
+          data: usuarioSinPassword,
+          message: 'Vendedor de ventanilla creado exitosamente'
+        });
+      } else {
+        res.status(result.error?.includes('UNIQUE') ? 409 : 500).json({
+          success: false,
+          message: result.message || 'Error al crear el vendedor de ventanilla'
+        });
+      }
+    } catch (error: any) {
+      console.error('Error creating store:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Error interno del servidor'
+      });
+    }
+  }
+
   async getUsuarioById(req: Request, res: Response): Promise<void> {
     try {
       const { id } = req.params;

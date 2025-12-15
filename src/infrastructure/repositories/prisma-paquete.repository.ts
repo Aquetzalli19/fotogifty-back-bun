@@ -87,9 +87,8 @@ export class PrismaPaqueteRepository implements PaqueteRepositoryPort {
 
   async delete(id: number): Promise<boolean> {
     try {
-      await prisma.paquetes_predefinidos.update({
-        where: { id },
-        data: { estado: false } // Cambiar estado a inactivo en lugar de eliminar físicamente
+      await prisma.paquetes_predefinidos.delete({
+        where: { id }
       });
       return true;
     } catch (error) {
@@ -103,6 +102,7 @@ export class PrismaPaqueteRepository implements PaqueteRepositoryPort {
       id: prismaPaquete.id,
       nombre: prismaPaquete.nombre,
       categoria_id: prismaPaquete.categoria_id,
+      categoria_nombre: prismaPaquete.categoria?.nombre || null,
       descripcion: prismaPaquete.descripcion,
       cantidad_fotos: prismaPaquete.cantidad_fotos,
       precio: Number(prismaPaquete.precio),

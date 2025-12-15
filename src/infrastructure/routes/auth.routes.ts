@@ -167,6 +167,68 @@ const authRoutes = (router: Router): void => {
   router.post('/auth/login/admin', (req, res) =>
     authController.loginAdmin(req, res)
   );
+
+  /**
+   * @swagger
+   * /api/auth/login/store:
+   *   post:
+   *     summary: Iniciar sesión como vendedor de ventanilla (store)
+   *     tags: [Autenticación]
+   *     requestBody:
+   *       required: true
+   *       content:
+   *         application/json:
+   *           schema:
+   *             type: object
+   *             required:
+   *               - email
+   *               - password
+   *             properties:
+   *               email:
+   *                 type: string
+   *                 format: email
+   *                 description: Email del vendedor de ventanilla
+   *                 example: "vendedor@tienda.com"
+   *               password:
+   *                 type: string
+   *                 format: password
+   *                 description: Contraseña del vendedor de ventanilla
+   *                 example: "password123"
+   *     responses:
+   *       200:
+   *         description: Login exitoso
+   *         content:
+   *           application/json:
+   *             schema:
+   *               type: object
+   *               properties:
+   *                 success:
+   *                   type: boolean
+   *                 message:
+   *                   type: string
+   *                 data:
+   *                   type: object
+   *                   properties:
+   *                     user:
+   *                       $ref: '#/components/schemas/UsuarioResponse'
+   *                     token:
+   *                       type: string
+   *                       description: Token JWT para autenticación
+   *                       example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+   *                     expiresIn:
+   *                       type: number
+   *                       description: Tiempo de expiración del token en segundos
+   *                       example: 86400
+   *       400:
+   *         description: Datos de entrada inválidos
+   *       401:
+   *         description: Credenciales inválidas
+   *       500:
+   *         description: Error interno del servidor
+   */
+  router.post('/auth/login/store', (req, res) =>
+    authController.loginStore(req, res)
+  );
 };
 
 export default authRoutes;

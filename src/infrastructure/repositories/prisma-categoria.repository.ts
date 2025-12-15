@@ -29,11 +29,7 @@ export class PrismaCategoriaRepository implements CategoriaRepositoryPort {
   }
 
   async findAll(): Promise<Categoria[]> {
-    const categorias = await prisma.categorias.findMany({
-      where: {
-        activo: true  // Solo categorías activas
-      }
-    });
+    const categorias = await prisma.categorias.findMany();
 
     return categorias.map(categoria => this.toDomain(categoria));
   }
@@ -53,9 +49,8 @@ export class PrismaCategoriaRepository implements CategoriaRepositoryPort {
 
   async delete(id: number): Promise<boolean> {
     try {
-      await prisma.categorias.update({
-        where: { id },
-        data: { activo: false } // Cambiar estado a inactivo en lugar de eliminar físicamente
+      await prisma.categorias.delete({
+        where: { id }
       });
       return true;
     } catch (error) {
