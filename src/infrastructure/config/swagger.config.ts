@@ -19,7 +19,7 @@ const swaggerOptions: Options = {
         description: "Servidor de desarrollo",
       },
       {
-        url: "https://fotogifty-back-bun-production.up.railway.app",
+        url: "https://fotogifty-back-bun-production-2eb3.up.railway.app",
         description: "Servidor de producción",
       },
     ],
