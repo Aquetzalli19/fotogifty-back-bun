@@ -12,6 +12,7 @@ import pedidoRoutes from './pedido.routes';
 import direccionRoutes from './direccion.routes';
 import checkoutRoutes from './checkout.routes';
 import webhookRoutes from './webhook.routes';
+import storeAuthRoutes from './store-auth.routes';
 
 const configureRoutes = (): Router => {
   const router = Router();
@@ -33,6 +34,7 @@ const configureRoutes = (): Router => {
   direccionRoutes(apiRouter);
   checkoutRoutes(apiRouter);
   webhookRoutes(apiRouter);
+  storeAuthRoutes(apiRouter);
   router.use('/api', apiRouter);
 
   return router;

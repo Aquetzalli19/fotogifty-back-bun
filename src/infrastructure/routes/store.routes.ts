@@ -3,6 +3,7 @@ import { StoreController } from '@infrastructure/controllers/store.controller';
 import { CrearStoreUseCase } from '@application/use-cases/crear-store.use-case';
 import { ActualizarStoreUseCase } from '@application/use-cases/actualizar-store.use-case';
 import { PrismaStoreRepository } from '@infrastructure/repositories/prisma-store.repository';
+import { authenticateToken, requireAdmin } from '@infrastructure/middlewares/auth.middleware';
 
 /**
  * @swagger
@@ -21,8 +22,10 @@ const storeRoutes = (router: Router): void => {
    * @swagger
    * /api/stores:
    *   post:
-   *     summary: Crear un nuevo store
+   *     summary: Crear un nuevo store (solo administradores)
    *     tags: [Stores]
+   *     security:
+   *       - bearerAuth: []
    *     requestBody:
    *       required: true
    *       content:
@@ -102,7 +105,7 @@ const storeRoutes = (router: Router): void => {
    *       500:
    *         description: Error interno del servidor
    */
-  router.post('/stores', (req, res) =>
+  router.post('/stores', authenticateToken, requireAdmin, (req, res) =>
     storeController.crearStore(req, res)
   );
 
@@ -110,8 +113,10 @@ const storeRoutes = (router: Router): void => {
    * @swagger
    * /api/stores:
    *   get:
-   *     summary: Obtener todos los stores
+   *     summary: Obtener todos los stores (solo administradores)
    *     tags: [Stores]
+   *     security:
+   *       - bearerAuth: []
    *     responses:
    *       200:
    *         description: Lista de todos los stores
@@ -151,7 +156,7 @@ const storeRoutes = (router: Router): void => {
    *       500:
    *         description: Error interno del servidor
    */
-  router.get('/stores', (req, res) =>
+  router.get('/stores', authenticateToken, requireAdmin, (req, res) =>
     storeController.getAllStores(req, res)
   );
 
@@ -159,8 +164,10 @@ const storeRoutes = (router: Router): void => {
    * @swagger
    * /api/stores/{id}:
    *   get:
-   *     summary: Obtener un store por ID
+   *     summary: Obtener un store por ID (solo administradores)
    *     tags: [Stores]
+   *     security:
+   *       - bearerAuth: []
    *     parameters:
    *       - in: path
    *         name: id
@@ -210,7 +217,7 @@ const storeRoutes = (router: Router): void => {
    *       500:
    *         description: Error interno del servidor
    */
-  router.get('/stores/:id', (req, res) =>
+  router.get('/stores/:id', authenticateToken, requireAdmin, (req, res) =>
     storeController.getStoreById(req, res)
   );
 
@@ -218,8 +225,10 @@ const storeRoutes = (router: Router): void => {
    * @swagger
    * /api/stores/{id}:
    *   put:
-   *     summary: Actualizar un store
+   *     summary: Actualizar un store (solo administradores)
    *     tags: [Stores]
+   *     security:
+   *       - bearerAuth: []
    *     parameters:
    *       - in: path
    *         name: id
@@ -306,7 +315,7 @@ const storeRoutes = (router: Router): void => {
    *       500:
    *         description: Error interno del servidor
    */
-  router.put('/stores/:id', (req, res) =>
+  router.put('/stores/:id', authenticateToken, requireAdmin, (req, res) =>
     storeController.updateStore(req, res)
   );
 
@@ -314,8 +323,10 @@ const storeRoutes = (router: Router): void => {
    * @swagger
    * /api/stores/{id}:
    *   delete:
-   *     summary: Eliminar un store (cambiar estado a inactivo)
+   *     summary: Eliminar un store (solo administradores)
    *     tags: [Stores]
+   *     security:
+   *       - bearerAuth: []
    *     parameters:
    *       - in: path
    *         name: id
@@ -342,7 +353,7 @@ const storeRoutes = (router: Router): void => {
    *       500:
    *         description: Error interno del servidor
    */
-  router.delete('/stores/:id', (req, res) =>
+  router.delete('/stores/:id', authenticateToken, requireAdmin, (req, res) =>
     storeController.deleteStore(req, res)
   );
 };
