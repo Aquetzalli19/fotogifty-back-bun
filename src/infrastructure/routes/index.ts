@@ -13,6 +13,7 @@ import direccionRoutes from './direccion.routes';
 import checkoutRoutes from './checkout.routes';
 import webhookRoutes from './webhook.routes';
 import storeAuthRoutes from './store-auth.routes';
+import imageValidationRoutes from './image-validation.routes';
 
 const configureRoutes = (): Router => {
   const router = Router();
@@ -35,6 +36,7 @@ const configureRoutes = (): Router => {
   checkoutRoutes(apiRouter);
   webhookRoutes(apiRouter);
   storeAuthRoutes(apiRouter);
+  imageValidationRoutes(apiRouter);
   router.use('/api', apiRouter);
 
   return router;

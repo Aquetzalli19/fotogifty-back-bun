@@ -5,6 +5,7 @@ import { FotoRepositoryPort } from '../../domain/ports/foto.repository.port';
 import { PaqueteRepositoryPort } from '../../domain/ports/paquete.repository.port';
 import { Foto } from '../../domain/entities/foto.entity';
 import { ItemsPedidoRepositoryPort } from '../../domain/ports/items-pedido.repository.port';
+import { ImageValidationService } from '../../infrastructure/services/image-validation.service';
 
 export interface SubirFotoRequest {
   file: Express.Multer.File;
@@ -46,28 +47,78 @@ export class SubirFotoUseCase {
       throw new Error(`Item de pedido con ID ${itemPedidoId} no encontrado`);
     }
 
-    // Obtener el paquete para obtener sus dimensiones y resolución
-    let ancho_foto: number | undefined;
-    let alto_foto: number | undefined;
-    let resolucion_foto: number | undefined;
+    // Obtener el paquete para obtener sus dimensiones y resolución esperadas
+    let ancho_foto_esperado: number | undefined;
+    let alto_foto_esperado: number | undefined;
+    let resolucion_esperada: number = 300; // Default: 300 DPI para impresión
 
     if (itemPedido.paquete_id) {
       const paquete = await this.paqueteRepository.findById(itemPedido.paquete_id);
       if (paquete) {
-        ancho_foto = paquete.ancho_foto;
-        alto_foto = paquete.alto_foto;
-        resolucion_foto = paquete.resolucion_foto;
+        ancho_foto_esperado = paquete.ancho_foto;
+        alto_foto_esperado = paquete.alto_foto;
+        resolucion_esperada = paquete.resolucion_foto || 300;
       }
     }
 
+    // Validar la imagen antes de subirla
+    const validationResult = await ImageValidationService.validateImage(file.buffer, {
+      minDPI: resolucion_esperada,
+      expectedWidth: ancho_foto_esperado,
+      expectedHeight: alto_foto_esperado,
+      tolerance: 0.5, // Tolerancia de 0.5cm
+      allowedFormats: ['jpg', 'jpeg', 'png'],
+      maxFileSize: 10 * 1024 * 1024 // 10MB
+    });
+
+    // Si hay errores críticos, rechazar la imagen
+    if (!validationResult.isValid) {
+      throw new Error(
+        `Imagen no válida: ${validationResult.errors.join(', ')}`
+      );
+    }
+
+    // Registrar advertencias en consola (para que el equipo de impresión lo vea)
+    if (validationResult.warnings.length > 0) {
+      console.warn('⚠️  Advertencias de calidad de imagen:');
+      validationResult.warnings.forEach(warning => console.warn(`   - ${warning}`));
+    }
+
+    // Extraer metadatos reales de la imagen
+    const imageMetadata = validationResult.metadata;
+    const dpi_real = imageMetadata.dpi || resolucion_esperada; // Usar el esperado si no hay DPI
+
+    // Embedir los DPI correctos en la imagen antes de subir a S3
+    console.log(`📸 Embebiendo DPI (${resolucion_esperada}) en imagen...`);
+    const imageWithDPI = await ImageValidationService.embedDPI(
+      file.buffer,
+      resolucion_esperada
+    );
+
     // Generar key único para S3
     const timestamp = Date.now();
-    const key = `fotos/${usuarioId}/${timestamp}-${file.originalname}`;
+    const originalName = file.originalname.replace(/\.[^/.]+$/, ''); // Sin extensión
+    const key = `fotos/${usuarioId}/${timestamp}-${originalName}.${imageWithDPI.format}`;
 
-    // Subir archivo a S3
-    const url = await this.s3Service.uploadFile(file, key);
+    // Determinar content type
+    const contentType = imageWithDPI.format === 'png' ? 'image/png' : 'image/jpeg';
 
-    // Crear registro en base de datos con las dimensiones del paquete
+    // Subir archivo procesado (con DPI embebidos) a S3
+    console.log(`☁️  Subiendo a S3 con DPI embebidos: ${resolucion_esperada} DPI`);
+    const url = await this.s3Service.uploadBuffer(
+      imageWithDPI.buffer,
+      key,
+      contentType
+    );
+
+    // Calcular dimensiones físicas reales de la imagen
+    const { widthCm, heightCm } = ImageValidationService.calculatePhysicalSize(
+      imageMetadata.width,
+      imageMetadata.height,
+      dpi_real
+    );
+
+    // Crear registro en base de datos con las dimensiones REALES de la imagen
     const foto: Foto = {
       usuario_id: usuarioId,
       pedido_id: pedidoId,  // Esto ahora puede ser opcional
@@ -75,9 +126,9 @@ export class SubirFotoUseCase {
       nombre_archivo: file.originalname,
       ruta_almacenamiento: url,
       tamaño_archivo: file.size,
-      ancho_foto,
-      alto_foto,
-      resolucion_foto
+      ancho_foto: Number(widthCm.toFixed(2)),  // Ancho físico REAL en cm
+      alto_foto: Number(heightCm.toFixed(2)),   // Alto físico REAL en cm
+      resolucion_foto: dpi_real                  // DPI REAL de la imagen
     };
 
     return await this.fotoRepository.save(foto);

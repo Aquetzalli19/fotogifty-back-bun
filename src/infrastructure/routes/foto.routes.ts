@@ -74,7 +74,7 @@ const fotoRoutes = (router: Router): void => {
   const pedidoRepository = new PrismaPedidoRepository();
   const paqueteRepository = new PrismaPaqueteRepository();
   const subirFotoUseCase = new SubirFotoUseCase(s3Service, usuarioRepository, pedidoRepository, itemsPedidoRepository, paqueteRepository, fotoRepository);
-  const fotoController = new FotoController(subirFotoUseCase);
+  const fotoController = new FotoController(subirFotoUseCase, fotoRepository, s3Service);
 
   // Endpoint temporal para depuración - con middleware de Multer
   router.post('/fotos/debug', upload.any(), handleMulterError, (req, res) => {
@@ -179,6 +179,67 @@ const fotoRoutes = (router: Router): void => {
    */
   router.post('/fotos/upload', authenticateToken, upload.single('foto'), handleMulterError, (req, res) =>
     fotoController.subirFoto(req, res)
+  );
+
+  /**
+   * @swagger
+   * /api/fotos/{id}/download:
+   *   get:
+   *     summary: Generar URL de descarga para una foto con DPI embebidos
+   *     description: Genera una URL firmada temporal para descargar una foto desde S3. La foto descargada contendrá los metadatos DPI correctos para impresión.
+   *     tags: [Fotos]
+   *     parameters:
+   *       - in: path
+   *         name: id
+   *         required: true
+   *         schema:
+   *           type: integer
+   *         description: ID de la foto
+   *     security:
+   *       - bearerAuth: []
+   *     responses:
+   *       200:
+   *         description: URL de descarga generada exitosamente
+   *         content:
+   *           application/json:
+   *             schema:
+   *               type: object
+   *               properties:
+   *                 success:
+   *                   type: boolean
+   *                 data:
+   *                   type: object
+   *                   properties:
+   *                     downloadUrl:
+   *                       type: string
+   *                       description: URL firmada para descargar el archivo
+   *                     filename:
+   *                       type: string
+   *                     expiresIn:
+   *                       type: integer
+   *                       description: Tiempo de expiración en segundos
+   *                     metadata:
+   *                       type: object
+   *                       properties:
+   *                         anchoFisico:
+   *                           type: number
+   *                           description: Ancho físico en cm
+   *                         altoFisico:
+   *                           type: number
+   *                           description: Alto físico en cm
+   *                         resolucionDPI:
+   *                           type: integer
+   *                           description: Resolución en DPI
+   *                         tamanioArchivo:
+   *                           type: integer
+   *                           description: Tamaño del archivo en bytes
+   *       403:
+   *         description: No tienes permiso para descargar esta foto
+   *       404:
+   *         description: Foto no encontrada
+   */
+  router.get('/fotos/:id/download', authenticateToken, (req, res) =>
+    fotoController.descargarFoto(req, res)
   );
 };
 
