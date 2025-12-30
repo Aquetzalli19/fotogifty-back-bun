@@ -241,6 +241,45 @@ const fotoRoutes = (router: Router): void => {
   router.get('/fotos/:id/download', authenticateToken, (req, res) =>
     fotoController.descargarFoto(req, res)
   );
+
+  /**
+   * @swagger
+   * /api/fotos/download-by-url:
+   *   post:
+   *     summary: Proxy para descargar imágenes de S3 sin problemas de CORS
+   *     description: El frontend envía la URL de S3, el backend la descarga y la reenvía sin problemas de CORS
+   *     tags: [Fotos]
+   *     requestBody:
+   *       required: true
+   *       content:
+   *         application/json:
+   *           schema:
+   *             type: object
+   *             required:
+   *               - imageUrl
+   *             properties:
+   *               imageUrl:
+   *                 type: string
+   *                 description: URL de la imagen en S3
+   *                 example: https://bucket.s3.amazonaws.com/fotos/1/imagen.jpg
+   *     security:
+   *       - bearerAuth: []
+   *     responses:
+   *       200:
+   *         description: Imagen descargada exitosamente
+   *         content:
+   *           image/jpeg:
+   *             schema:
+   *               type: string
+   *               format: binary
+   *       400:
+   *         description: URL inválida
+   *       404:
+   *         description: Imagen no encontrada en S3
+   */
+  router.post('/fotos/download-by-url', authenticateToken, requireRole('admin', 'super_admin', 'store'), (req, res) =>
+    fotoController.downloadByUrl(req, res)
+  );
 };
 
 export default fotoRoutes;

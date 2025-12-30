@@ -155,6 +155,69 @@ export class FotoController {
   }
 
   /**
+   * Proxy para descargar imágenes de S3 sin problemas de CORS
+   * El frontend envía la URL de S3, el backend la descarga y la reenvía
+   */
+  async downloadByUrl(req: Request, res: Response): Promise<void> {
+    try {
+      const { imageUrl } = req.body;
+
+      // 1. Validar que la URL sea válida
+      if (!imageUrl || typeof imageUrl !== 'string') {
+        res.status(400).json({
+          success: false,
+          error: 'Se requiere imageUrl'
+        });
+        return;
+      }
+
+      // 2. Verificar que sea de tu bucket S3 (seguridad)
+      const bucketName = process.env.S3_BUCKET_NAME;
+      if (!bucketName || !imageUrl.includes(bucketName)) {
+        res.status(400).json({
+          success: false,
+          error: 'URL de S3 inválida'
+        });
+        return;
+      }
+
+      // 3. Descargar imagen desde S3
+      console.log(`📥 Descargando imagen desde S3: ${imageUrl}`);
+      const response = await fetch(imageUrl);
+
+      if (!response.ok) {
+        console.error(`❌ Error al obtener imagen de S3: ${response.status}`);
+        res.status(404).json({
+          success: false,
+          error: 'Imagen no encontrada en S3'
+        });
+        return;
+      }
+
+      // 4. Obtener el buffer de la imagen
+      const arrayBuffer = await response.arrayBuffer();
+      const buffer = Buffer.from(arrayBuffer);
+
+      // 5. Obtener el tipo de contenido
+      const contentType = response.headers.get('content-type') || 'image/jpeg';
+
+      // 6. Enviar la imagen al frontend
+      res.setHeader('Content-Type', contentType);
+      res.setHeader('Content-Length', buffer.length.toString());
+      res.setHeader('Cache-Control', 'public, max-age=31536000'); // Cache 1 año
+      res.send(buffer);
+
+      console.log(`✅ Imagen enviada al frontend (${buffer.length} bytes)`);
+    } catch (error: any) {
+      console.error('❌ Error en proxy de descarga:', error);
+      res.status(500).json({
+        success: false,
+        error: 'Error al descargar imagen desde S3'
+      });
+    }
+  }
+
+  /**
    * Extrae la key de S3 de una URL completa
    */
   private extractS3KeyFromUrl(url: string): string | null {

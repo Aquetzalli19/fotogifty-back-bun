@@ -245,7 +245,19 @@ export class PrismaPedidoRepository implements PedidoRepositoryPort {
       subtotal: Number(prismaPedido.subtotal),
       iva: Number(prismaPedido.iva),
       total: Number(prismaPedido.total),
-      imagenes: prismaPedido.fotos?.map((foto: any) => foto.ruta_almacenamiento),
+      // ✅ NUEVO: Array de objetos de fotos completos con IDs
+      fotos: prismaPedido.fotos?.map((foto: any) => ({
+        id: foto.id,
+        url: foto.ruta_almacenamiento,
+        nombre_archivo: foto.nombre_archivo,
+        ancho_foto: foto.ancho_foto ? Number(foto.ancho_foto) : undefined,
+        alto_foto: foto.alto_foto ? Number(foto.alto_foto) : undefined,
+        resolucion_foto: foto.resolucion_foto,
+        tamanio_archivo: foto.tamaño_archivo,
+        id_item_pedido: foto.item_pedido_id
+      })) || [],
+      // ⚠️ Deprecated (mantener por compatibilidad)
+      imagenes: prismaPedido.fotos?.map((foto: any) => foto.ruta_almacenamiento) || [],
       creado_en: prismaPedido.fecha_creacion,
       actualizado_en: prismaPedido.fecha_actualizacion
     };

@@ -7,6 +7,17 @@ export interface ItemPedido {
   num_fotos_requeridas: number;
 }
 
+export interface FotoDetalle {
+  id: number;
+  url: string;
+  nombre_archivo: string;
+  ancho_foto?: number;
+  alto_foto?: number;
+  resolucion_foto?: number;
+  tamanio_archivo: number;
+  id_item_pedido: number;
+}
+
 export enum EstadoPedido {
   PENDIENTE = 'Pendiente',
   ENVIADO = 'Enviado',
@@ -40,7 +51,8 @@ export interface Pedido {
   subtotal: number;
   iva: number;
   total: number;
-  imagenes?: string[];
+  fotos?: FotoDetalle[]; // ✅ NUEVO: Array de objetos de fotos completos
+  imagenes?: string[]; // ⚠️ Deprecated (mantener por compatibilidad)
   creado_en?: Date;
   actualizado_en?: Date;
 }
@@ -61,6 +73,7 @@ export class PedidoEntity implements Pedido {
   public subtotal: number;
   public iva: number;
   public total: number;
+  public fotos?: FotoDetalle[];
   public imagenes?: string[];
   public creado_en: Date;
   public actualizado_en: Date;
