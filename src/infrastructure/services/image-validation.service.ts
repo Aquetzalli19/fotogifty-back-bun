@@ -240,18 +240,13 @@ export class ImageValidationService {
     // Determinar el formato de salida
     const format = metadata.format || 'jpeg';
 
-    // Procesar la imagen con los DPI correctos
-    let processedImage = image.withMetadata({
-      density: dpi, // Establecer DPI
-      exif: {
-        IFD0: {
-          // EXIF tags para DPI
-          XResolution: dpi,
-          YResolution: dpi,
-          ResolutionUnit: 2 // 2 = pulgadas
-        }
-      }
-    });
+    // IMPORTANTE: Primero remover metadatos existentes para evitar conflictos
+    // Luego agregar solo density (Sharp lo maneja correctamente)
+    let processedImage = image
+      .withMetadata(false)  // Remover EXIF problemáticos del navegador
+      .withMetadata({
+        density: dpi  // Sharp maneja esto correctamente internamente
+      });
 
     // Convertir según el formato
     let outputBuffer: Buffer;
