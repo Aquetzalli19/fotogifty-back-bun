@@ -181,6 +181,33 @@ export class PrismaPedidoRepository implements PedidoRepositoryPort {
     return pedidosPrisma.map(pedido => this.toDomain(pedido));
   }
 
+  async findByDateRange(fechaInicio: Date, fechaFin: Date): Promise<Pedido[]> {
+    const pedidosPrisma = await prisma.pedidos.findMany({
+      where: {
+        fecha_creacion: {
+          gte: fechaInicio,
+          lte: fechaFin
+        }
+      },
+      include: {
+        usuario: true,
+        direccion: true,
+        estado: true,
+        items: {
+          include: {
+            paquete: true
+          }
+        },
+        fotos: true
+      },
+      orderBy: {
+        fecha_creacion: 'asc'
+      }
+    });
+
+    return pedidosPrisma.map(pedido => this.toDomain(pedido));
+  }
+
   async updateEstado(id: number, estado: string): Promise<Pedido | null> {
     const pedidoPrisma = await prisma.pedidos.update({
       where: { id },

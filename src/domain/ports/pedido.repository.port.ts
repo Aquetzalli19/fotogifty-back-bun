@@ -4,6 +4,7 @@ export interface PedidoRepositoryPort {
   findById(id: number): Promise<Pedido | null>;
   findByUsuarioId(usuarioId: number): Promise<Pedido[]>;
   findByEstado(estado: string): Promise<Pedido[]>;
+  findByDateRange(fechaInicio: Date, fechaFin: Date): Promise<Pedido[]>;
   findAll(): Promise<Pedido[]>;
   create(pedido: Pedido): Promise<Pedido>;
   update(pedido: Pedido): Promise<Pedido>;
