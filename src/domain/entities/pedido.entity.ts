@@ -35,10 +35,12 @@ export enum EstadoPago {
   REEMBOLSADO = 'refunded'
 }
 
+export type MetodoEntrega = 'envio_domicilio' | 'recogida_tienda';
+
 export interface Pedido {
   id?: number;
   id_usuario?: number;  // Relación con el usuario que hizo el pedido
-  id_direccion?: number; // Relación con la dirección de envío
+  id_direccion?: number; // Relación con la dirección de envío (opcional para recogida en tienda)
   id_pago_stripe?: string;
   id_sesion_stripe?: string;
   nombre_cliente: string;
@@ -48,6 +50,7 @@ export interface Pedido {
   items_pedido: ItemPedido[];
   estado: EstadoPedido;
   estado_pago: EstadoPago;
+  metodo_entrega: MetodoEntrega; // Método de entrega del pedido
   subtotal: number;
   iva: number;
   total: number;
@@ -70,6 +73,7 @@ export class PedidoEntity implements Pedido {
   public items_pedido: ItemPedido[];
   public estado: EstadoPedido;
   public estado_pago: EstadoPago;
+  public metodo_entrega: MetodoEntrega;
   public subtotal: number;
   public iva: number;
   public total: number;
@@ -87,6 +91,7 @@ export class PedidoEntity implements Pedido {
     subtotal: number,
     iva: number,
     total: number,
+    metodo_entrega: MetodoEntrega = 'envio_domicilio',
     id_pago_stripe?: string,
     id_sesion_stripe?: string,
     telefono_cliente?: string,
@@ -107,6 +112,7 @@ export class PedidoEntity implements Pedido {
     this.items_pedido = items_pedido;
     this.estado = estado;
     this.estado_pago = estado_pago;
+    this.metodo_entrega = metodo_entrega;
     this.subtotal = subtotal;
     this.iva = iva;
     this.total = total;
@@ -124,6 +130,7 @@ export class PedidoEntity implements Pedido {
     subtotal: number,
     iva: number,
     total: number,
+    metodo_entrega: MetodoEntrega = 'envio_domicilio',
     id_pago_stripe?: string,
     id_sesion_stripe?: string,
     telefono_cliente?: string
@@ -137,6 +144,7 @@ export class PedidoEntity implements Pedido {
       subtotal,
       iva,
       total,
+      metodo_entrega,
       id_pago_stripe,
       id_sesion_stripe,
       telefono_cliente

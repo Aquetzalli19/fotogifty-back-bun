@@ -72,10 +72,11 @@ export class PrismaPedidoRepository implements PedidoRepositoryPort {
         fecha_pedido: pedido.fecha_pedido,
         estado_personalizado: pedido.estado, // Usando el nuevo nombre del campo
         estado_pago: pedido.estado_pago,
+        metodo_entrega: pedido.metodo_entrega,
         subtotal: pedido.subtotal,
         iva: pedido.iva,
         total: pedido.total,
-        direccion_id: (pedido as any).direccion_envio.id,
+        direccion_id: pedido.id_direccion || null,
         estado_id: 1, // Valor por defecto
         items: {
           create: pedido.items_pedido.map(item => ({
@@ -121,10 +122,11 @@ export class PrismaPedidoRepository implements PedidoRepositoryPort {
         fecha_pedido: pedido.fecha_pedido,
         estado_personalizado: pedido.estado, // Usando el nuevo nombre del campo
         estado_pago: pedido.estado_pago,
+        metodo_entrega: pedido.metodo_entrega,
         subtotal: pedido.subtotal,
         iva: pedido.iva,
         total: pedido.total,
-        direccion_id: (pedido as any).direccion_envio.id
+        direccion_id: pedido.id_direccion || null
       },
       include: {
         usuario: true,
@@ -245,18 +247,20 @@ export class PrismaPedidoRepository implements PedidoRepositoryPort {
       id: prismaPedido.id,
       orderId: prismaPedido.id, // Alias para compatibilidad con frontend
       id_usuario: prismaPedido.usuario_id,
+      id_direccion: prismaPedido.direccion_id,
       id_pago_stripe: prismaPedido.id_pago_stripe,
       id_sesion_stripe: prismaPedido.id_sesion_stripe,
       nombre_cliente: prismaPedido.nombre_cliente,
       email_cliente: prismaPedido.email_cliente,
       telefono_cliente: prismaPedido.telefono_cliente,
-      direccion_envio: {
+      // Direccion de envio solo si existe (para compatibilidad con frontend)
+      direccion_envio: prismaPedido.direccion ? {
         calle: prismaPedido.direccion.direccion,
         ciudad: prismaPedido.direccion.ciudad,
         estado: prismaPedido.direccion.estado,
         codigo_postal: prismaPedido.direccion.codigo_postal,
         pais: prismaPedido.direccion.pais
-      },
+      } : undefined,
       fecha_pedido: prismaPedido.fecha_pedido,
       items_pedido: prismaPedido.items.map((item: any) => ({
         id: item.id,
@@ -269,6 +273,7 @@ export class PrismaPedidoRepository implements PedidoRepositoryPort {
       })),
       estado: prismaPedido.estado_personalizado as any, // Usando el nuevo nombre del campo
       estado_pago: prismaPedido.estado_pago as any,
+      metodo_entrega: prismaPedido.metodo_entrega as any,
       subtotal: Number(prismaPedido.subtotal),
       iva: Number(prismaPedido.iva),
       total: Number(prismaPedido.total),

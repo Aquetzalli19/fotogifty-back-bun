@@ -2,6 +2,7 @@ import { StripeService, CreateCheckoutSessionParams, CheckoutSessionResult } fro
 import { UsuarioRepositoryPort } from '../../domain/ports/usuario.repository.port';
 import { PaqueteRepositoryPort } from '../../domain/ports/paquete.repository.port';
 import { DireccionRepositoryPort } from '../../domain/ports/direccion.repository.port';
+import { MetodoEntrega } from '../../domain/entities/pedido.entity';
 
 interface ItemCheckout {
   id_paquete: number;
@@ -14,7 +15,8 @@ interface ItemCheckout {
 
 interface CrearSesionCheckoutInput {
   id_usuario: number;
-  id_direccion: number;
+  id_direccion?: number; // Opcional: solo requerido para envío a domicilio
+  metodo_entrega: MetodoEntrega; // Nuevo campo
   nombre_cliente: string;
   email_cliente: string;
   telefono_cliente?: string;
@@ -46,6 +48,7 @@ export class CrearSesionCheckoutUseCase {
       const {
         id_usuario,
         id_direccion,
+        metodo_entrega,
         nombre_cliente,
         email_cliente,
         telefono_cliente,
@@ -58,11 +61,29 @@ export class CrearSesionCheckoutUseCase {
       } = input;
 
       // Validar campos requeridos
-      if (!nombre_cliente || !email_cliente || !id_direccion || !items || items.length === 0) {
+      if (!nombre_cliente || !email_cliente || !items || items.length === 0) {
         return {
           success: false,
-          message: 'Nombre, email, dirección e items son requeridos',
+          message: 'Nombre, email e items son requeridos',
           error: 'Campos requeridos faltantes'
+        };
+      }
+
+      // Validar metodo_entrega
+      if (!metodo_entrega || (metodo_entrega !== 'envio_domicilio' && metodo_entrega !== 'recogida_tienda')) {
+        return {
+          success: false,
+          message: 'Método de entrega inválido. Debe ser "envio_domicilio" o "recogida_tienda"',
+          error: 'Método de entrega inválido'
+        };
+      }
+
+      // Validar dirección solo si es envío a domicilio
+      if (metodo_entrega === 'envio_domicilio' && !id_direccion) {
+        return {
+          success: false,
+          message: 'La dirección de envío es requerida para envío a domicilio',
+          error: 'Dirección requerida'
         };
       }
 
@@ -76,22 +97,24 @@ export class CrearSesionCheckoutUseCase {
         };
       }
 
-      // Verificar que la dirección exista y pertenezca al usuario
-      const direccion = await this.direccionRepository.findById(id_direccion);
-      if (!direccion) {
-        return {
-          success: false,
-          message: 'La dirección especificada no existe',
-          error: 'Dirección no encontrada'
-        };
-      }
+      // Verificar que la dirección exista y pertenezca al usuario (solo para envío a domicilio)
+      if (metodo_entrega === 'envio_domicilio' && id_direccion) {
+        const direccion = await this.direccionRepository.findById(id_direccion);
+        if (!direccion) {
+          return {
+            success: false,
+            message: 'La dirección especificada no existe',
+            error: 'Dirección no encontrada'
+          };
+        }
 
-      if (direccion.usuario_id !== id_usuario) {
-        return {
-          success: false,
-          message: 'La dirección no pertenece al usuario',
-          error: 'Dirección no autorizada'
-        };
+        if (direccion.usuario_id !== id_usuario) {
+          return {
+            success: false,
+            message: 'La dirección no pertenece al usuario',
+            error: 'Dirección no autorizada'
+          };
+        }
       }
 
       // Verificar que los paquetes existan y validar precios
@@ -158,7 +181,8 @@ export class CrearSesionCheckoutUseCase {
       // Crear sesión de checkout en Stripe
       const sessionResult = await this.stripeService.createCheckoutSession({
         id_usuario,
-        id_direccion,
+        id_direccion: metodo_entrega === 'envio_domicilio' ? id_direccion : undefined,
+        metodo_entrega,
         nombre_cliente,
         email_cliente,
         telefono_cliente,

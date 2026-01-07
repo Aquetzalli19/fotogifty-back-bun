@@ -61,7 +61,8 @@ export class ProcesarWebhookStripeUseCase {
 
       // Extraer datos del metadata
       const id_usuario = parseInt(metadata.id_usuario);
-      const id_direccion = parseInt(metadata.id_direccion);
+      const id_direccion = metadata.id_direccion ? parseInt(metadata.id_direccion) : undefined;
+      const metodo_entrega = (metadata.metodo_entrega || 'envio_domicilio') as 'envio_domicilio' | 'recogida_tienda';
       const nombre_cliente = metadata.nombre_cliente || session.customer_details?.name || '';
       const email_cliente = metadata.email_cliente || session.customer_details?.email || '';
       const telefono_cliente = metadata.telefono_cliente || session.customer_details?.phone || undefined;
@@ -99,15 +100,13 @@ export class ProcesarWebhookStripeUseCase {
         subtotal,
         iva,
         total,
+        metodo_entrega,
         session.payment_intent as string || undefined,
         session.id,
         telefono_cliente,
         EstadoPedido.PENDIENTE,
         EstadoPago.PAGADO
       );
-
-      // Agregar direccion_envio para el repositorio
-      (nuevoPedido as any).direccion_envio = { id: id_direccion };
 
       const pedidoCreado = await this.pedidoRepository.create(nuevoPedido);
 

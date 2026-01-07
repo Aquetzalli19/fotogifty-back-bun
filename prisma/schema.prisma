@@ -93,7 +93,7 @@ model estados_pedido {
 model pedidos {
   id                   Int                @id @default(autoincrement())
   usuario_id           Int
-  direccion_id         Int
+  direccion_id         Int?
   estado_id            Int                @default(1)
   fecha_creacion       DateTime           @default(now())
   fecha_actualizacion  DateTime           @default(now())
@@ -109,10 +109,11 @@ model pedidos {
   nombre_cliente       String             @db.VarChar(255)
   subtotal             Decimal            @db.Decimal(10, 2)
   telefono_cliente     String?            @db.VarChar(50)
+  metodo_entrega       String             @default("envio_domicilio") @db.VarChar(20)
   calendarios          calendario_fotos[]
   fotos                fotos[]
   items                items_pedido[]
-  direccion            direcciones        @relation(fields: [direccion_id], references: [id])
+  direccion            direcciones?       @relation(fields: [direccion_id], references: [id])
   estado               estados_pedido     @relation(fields: [estado_id], references: [id])
   usuario              usuarios           @relation(fields: [usuario_id], references: [id])
 

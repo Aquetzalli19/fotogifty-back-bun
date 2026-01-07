@@ -2,7 +2,8 @@ import Stripe from 'stripe';
 
 export interface CreateCheckoutSessionParams {
   id_usuario: number;
-  id_direccion: number;
+  id_direccion?: number; // Opcional: solo requerido para envío a domicilio
+  metodo_entrega: 'envio_domicilio' | 'recogida_tienda';
   nombre_cliente: string;
   email_cliente: string;
   telefono_cliente?: string;
@@ -50,6 +51,7 @@ export class StripeService {
     const {
       id_usuario,
       id_direccion,
+      metodo_entrega,
       nombre_cliente,
       email_cliente,
       telefono_cliente,
@@ -96,7 +98,8 @@ export class StripeService {
       line_items,
       metadata: {
         id_usuario: id_usuario.toString(),
-        id_direccion: id_direccion.toString(),
+        id_direccion: id_direccion ? id_direccion.toString() : '',
+        metodo_entrega,
         nombre_cliente,
         email_cliente,
         telefono_cliente: telefono_cliente || '',
