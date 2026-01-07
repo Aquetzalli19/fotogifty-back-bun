@@ -36,6 +36,9 @@ export class AnalyticsController {
         return;
       }
 
+      // Ajustar fechaFin para incluir todo el día (23:59:59.999)
+      fin.setHours(23, 59, 59, 999);
+
       // Validar que fechaInicio <= fechaFin
       if (inicio > fin) {
         res.status(400).json({
@@ -93,6 +96,9 @@ export class AnalyticsController {
         return;
       }
 
+      // Ajustar fechaFin para incluir todo el día (23:59:59.999)
+      fin.setHours(23, 59, 59, 999);
+
       const analytics = await this.obtenerAnalyticsUseCase.execute(inicio, fin);
 
       res.status(200).json({
@@ -135,6 +141,9 @@ export class AnalyticsController {
         return;
       }
 
+      // Ajustar fechaFin para incluir todo el día (23:59:59.999)
+      fin.setHours(23, 59, 59, 999);
+
       const analytics = await this.obtenerAnalyticsUseCase.execute(inicio, fin);
 
       res.status(200).json({
@@ -176,6 +185,9 @@ export class AnalyticsController {
         });
         return;
       }
+
+      // Ajustar fechaFin para incluir todo el día (23:59:59.999)
+      fin.setHours(23, 59, 59, 999);
 
       const analytics = await this.obtenerAnalyticsUseCase.execute(
         inicio,
@@ -223,6 +235,9 @@ export class AnalyticsController {
         return;
       }
 
+      // Ajustar fechaFin para incluir todo el día (23:59:59.999)
+      fin.setHours(23, 59, 59, 999);
+
       const analytics = await this.obtenerAnalyticsUseCase.execute(inicio, fin);
 
       res.status(200).json({
@@ -264,6 +279,9 @@ export class AnalyticsController {
         });
         return;
       }
+
+      // Ajustar fechaFin para incluir todo el día (23:59:59.999)
+      fin.setHours(23, 59, 59, 999);
 
       const analytics = await this.obtenerAnalyticsUseCase.execute(inicio, fin);
 
