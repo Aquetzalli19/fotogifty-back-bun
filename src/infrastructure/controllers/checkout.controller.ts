@@ -13,6 +13,7 @@ export class CheckoutController {
       const {
         id_usuario,
         id_direccion,
+        metodo_entrega,
         nombre_cliente,
         email_cliente,
         telefono_cliente,
@@ -33,12 +34,24 @@ export class CheckoutController {
         return;
       }
 
-      if (!id_direccion || typeof id_direccion !== 'number') {
+      // Validar metodo_entrega
+      if (!metodo_entrega || (metodo_entrega !== 'envio_domicilio' && metodo_entrega !== 'recogida_tienda')) {
         res.status(400).json({
           success: false,
-          message: 'id_direccion es requerido y debe ser un número'
+          message: 'metodo_entrega es requerido y debe ser "envio_domicilio" o "recogida_tienda"'
         });
         return;
+      }
+
+      // Validar id_direccion solo si es envío a domicilio
+      if (metodo_entrega === 'envio_domicilio') {
+        if (!id_direccion || typeof id_direccion !== 'number') {
+          res.status(400).json({
+            success: false,
+            message: 'id_direccion es requerido y debe ser un número para envío a domicilio'
+          });
+          return;
+        }
       }
 
       if (!nombre_cliente || typeof nombre_cliente !== 'string') {
@@ -148,6 +161,7 @@ export class CheckoutController {
       const result = await this.crearSesionCheckoutUseCase.execute({
         id_usuario,
         id_direccion,
+        metodo_entrega,
         nombre_cliente,
         email_cliente,
         telefono_cliente,
