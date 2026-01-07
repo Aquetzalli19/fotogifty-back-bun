@@ -13,7 +13,7 @@ import { authenticateToken } from '../middlewares/auth.middleware';
 const authRoutes = (router: Router): void => {
   const usuarioRepository = new PrismaUsuarioRepository();
   const loginUseCase = new LoginUseCase(usuarioRepository);
-  const authController = new AuthController(loginUseCase);
+  const authController = new AuthController(loginUseCase, usuarioRepository);
 
   /**
    * @swagger

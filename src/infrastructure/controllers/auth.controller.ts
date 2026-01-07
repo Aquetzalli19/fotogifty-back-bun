@@ -3,11 +3,15 @@ import { UsuarioConTipo } from '../../domain/entities/tipo-usuario.entity';
 import { LoginUseCase } from '../../application/use-cases/login.use-case';
 import { TokenService } from '../services/token.service';
 import { PasswordService } from '../services/password.service';
+import { UsuarioRepositoryPort } from '../../domain/ports/usuario.repository.port';
 
 export class AuthController {
   private tokenService: TokenService;
 
-  constructor(private loginUseCase: LoginUseCase) {
+  constructor(
+    private loginUseCase: LoginUseCase,
+    private usuarioRepository: UsuarioRepositoryPort
+  ) {
     this.tokenService = new TokenService();
   }
 
@@ -190,9 +194,23 @@ export class AuthController {
         return;
       }
 
+      // Buscar el usuario completo en la base de datos para obtener todos los campos
+      const usuarioCompleto = await this.usuarioRepository.findById(req.user.id);
+
+      if (!usuarioCompleto) {
+        res.status(404).json({
+          success: false,
+          message: 'Usuario no encontrado'
+        });
+        return;
+      }
+
+      // No devolver la contraseña hasheada en la respuesta
+      const { password_hash: _, ...usuarioSinPassword } = usuarioCompleto;
+
       res.status(200).json({
         success: true,
-        data: req.user
+        data: usuarioSinPassword
       });
     } catch (error) {
       console.error('Error en getMe:', error);
