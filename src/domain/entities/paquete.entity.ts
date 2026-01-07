@@ -10,6 +10,7 @@ export interface Paquete {
   resolucion_foto?: number;
   ancho_foto?: number;
   alto_foto?: number;
+  imagen_url?: string;
 }
 
 export class PaqueteEntity implements Paquete {
@@ -24,6 +25,7 @@ export class PaqueteEntity implements Paquete {
   public resolucion_foto?: number;
   public ancho_foto?: number;
   public alto_foto?: number;
+  public imagen_url?: string;
 
   constructor(
     nombre: string,
@@ -35,6 +37,7 @@ export class PaqueteEntity implements Paquete {
     resolucion_foto?: number,
     ancho_foto?: number,
     alto_foto?: number,
+    imagen_url?: string,
     id?: number
   ) {
     this.id = id;
@@ -47,6 +50,7 @@ export class PaqueteEntity implements Paquete {
     this.resolucion_foto = resolucion_foto;
     this.ancho_foto = ancho_foto;
     this.alto_foto = alto_foto;
+    this.imagen_url = imagen_url;
   }
 
   static create(
@@ -58,7 +62,8 @@ export class PaqueteEntity implements Paquete {
     descripcion?: string,
     resolucion_foto?: number,
     ancho_foto?: number,
-    alto_foto?: number
+    alto_foto?: number,
+    imagen_url?: string
   ): PaqueteEntity {
     return new PaqueteEntity(
       nombre,
@@ -69,7 +74,8 @@ export class PaqueteEntity implements Paquete {
       descripcion,
       resolucion_foto,
       ancho_foto,
-      alto_foto
+      alto_foto,
+      imagen_url
     );
   }
 }

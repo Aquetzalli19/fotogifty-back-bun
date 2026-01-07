@@ -1,9 +1,11 @@
 import { Router } from 'express';
+import multer from 'multer';
 import { PaqueteController } from '../controllers/paquete.controller';
 import { CrearPaqueteUseCase } from '../../application/use-cases/crear-paquete.use-case';
 import { ActualizarPaqueteUseCase } from '../../application/use-cases/actualizar-paquete.use-case';
 import { PrismaPaqueteRepository } from '../repositories/prisma-paquete.repository';
 import { PrismaCategoriaRepository } from '../repositories/prisma-categoria.repository';
+import { S3Service } from '../services/s3.service';
 
 /**
  * @swagger
@@ -12,12 +14,56 @@ import { PrismaCategoriaRepository } from '../repositories/prisma-categoria.repo
  *   description: Gestión de paquetes de impresión de fotos
  */
 
+// Configurar multer para memoria
+const upload = multer({
+  storage: multer.memoryStorage(),
+  limits: {
+    fileSize: 5 * 1024 * 1024, // 5MB
+  },
+  fileFilter: (req, file, cb) => {
+    if (file.mimetype.startsWith('image/')) {
+      cb(null, true);
+    } else {
+      cb(new Error('Solo se permiten archivos de imagen'), false);
+    }
+  },
+});
+
+// Middleware para manejar errores de Multer
+const handleMulterError = (err: any, req: any, res: any, next: any) => {
+  if (err instanceof multer.MulterError) {
+    if (err.code === 'LIMIT_FILE_SIZE') {
+      return res.status(400).json({
+        success: false,
+        message: 'El archivo es demasiado grande. Máximo permitido: 5MB.'
+      });
+    }
+    return res.status(400).json({
+      success: false,
+      message: `Error en la carga del archivo: ${err.code}`
+    });
+  } else if (err) {
+    if (err.message.includes('Solo se permiten archivos de imagen')) {
+      return res.status(400).json({
+        success: false,
+        message: err.message
+      });
+    }
+    return res.status(500).json({
+      success: false,
+      message: err.message || 'Error en la carga del archivo'
+    });
+  }
+  next();
+};
+
 const paqueteRoutes = (router: Router): void => {
   const paqueteRepository = new PrismaPaqueteRepository();
   const categoriaRepository = new PrismaCategoriaRepository();
+  const s3Service = new S3Service();
   const crearPaqueteUseCase = new CrearPaqueteUseCase(paqueteRepository, categoriaRepository);
   const actualizarPaqueteUseCase = new ActualizarPaqueteUseCase(paqueteRepository, categoriaRepository);
-  const paqueteController = new PaqueteController(crearPaqueteUseCase, actualizarPaqueteUseCase, paqueteRepository, categoriaRepository);
+  const paqueteController = new PaqueteController(crearPaqueteUseCase, actualizarPaqueteUseCase, paqueteRepository, categoriaRepository, s3Service);
 
   /**
    * @swagger
@@ -25,10 +71,12 @@ const paqueteRoutes = (router: Router): void => {
    *   post:
    *     summary: Crear un nuevo paquete
    *     tags: [Paquetes]
+   *     consumes:
+   *       - multipart/form-data
    *     requestBody:
    *       required: true
    *       content:
-   *         application/json:
+   *         multipart/form-data:
    *           schema:
    *             type: object
    *             required:
@@ -37,6 +85,10 @@ const paqueteRoutes = (router: Router): void => {
    *               - precio
    *               - estado
    *             properties:
+   *               imagen:
+   *                 type: string
+   *                 format: binary
+   *                 description: Imagen del paquete (opcional, max 5MB)
    *               nombre:
    *                 type: string
    *                 description: Nombre del paquete
@@ -93,7 +145,7 @@ const paqueteRoutes = (router: Router): void => {
    *       500:
    *         description: Error interno del servidor
    */
-  router.post('/paquetes', (req, res) =>
+  router.post('/paquetes', upload.single('imagen'), handleMulterError, (req, res) =>
     paqueteController.crearPaquete(req, res)
   );
 
@@ -174,6 +226,8 @@ const paqueteRoutes = (router: Router): void => {
    *   put:
    *     summary: Actualizar un paquete
    *     tags: [Paquetes]
+   *     consumes:
+   *       - multipart/form-data
    *     parameters:
    *       - in: path
    *         name: id
@@ -184,10 +238,14 @@ const paqueteRoutes = (router: Router): void => {
    *     requestBody:
    *       required: true
    *       content:
-   *         application/json:
+   *         multipart/form-data:
    *           schema:
    *             type: object
    *             properties:
+   *               imagen:
+   *                 type: string
+   *                 format: binary
+   *                 description: Nueva imagen del paquete (opcional, max 5MB)
    *               nombre:
    *                 type: string
    *                 description: Nombre del paquete
@@ -246,7 +304,7 @@ const paqueteRoutes = (router: Router): void => {
    *       500:
    *         description: Error interno del servidor
    */
-  router.put('/paquetes/:id', (req, res) =>
+  router.put('/paquetes/:id', upload.single('imagen'), handleMulterError, (req, res) =>
     paqueteController.updatePaquete(req, res)
   );
 

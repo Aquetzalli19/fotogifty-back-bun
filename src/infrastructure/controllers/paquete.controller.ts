@@ -4,13 +4,15 @@ import { CrearPaqueteUseCase } from '../../application/use-cases/crear-paquete.u
 import { ActualizarPaqueteUseCase } from '../../application/use-cases/actualizar-paquete.use-case';
 import { CategoriaRepositoryPort } from '../../domain/ports/categoria.repository.port';
 import { PaqueteRepositoryPort } from '../../domain/ports/paquete.repository.port';
+import { S3Service } from '../services/s3.service';
 
 export class PaqueteController {
   constructor(
     private crearPaqueteUseCase: CrearPaqueteUseCase,
     private actualizarPaqueteUseCase: ActualizarPaqueteUseCase,
     private paqueteRepository: PaqueteRepositoryPort,
-    private categoriaRepository: CategoriaRepositoryPort
+    private categoriaRepository: CategoriaRepositoryPort,
+    private s3Service: S3Service
   ) {}
 
   async crearPaquete(req: Request, res: Response): Promise<void> {
@@ -27,6 +29,15 @@ export class PaqueteController {
         alto_foto
       } = req.body;
 
+      // Convertir valores de string a los tipos correctos (cuando vienen de form-data)
+      const parsedCategoriaId = categoria_id ? parseInt(categoria_id) : undefined;
+      const parsedCantidadFotos = parseInt(cantidad_fotos);
+      const parsedPrecio = parseFloat(precio);
+      const parsedEstado = estado === 'true' || estado === true;
+      const parsedResolucionFoto = resolucion_foto ? parseInt(resolucion_foto) : undefined;
+      const parsedAnchoFoto = ancho_foto ? parseFloat(ancho_foto) : undefined;
+      const parsedAltoFoto = alto_foto ? parseFloat(alto_foto) : undefined;
+
       // Validar que los campos requeridos estén presentes
       if (!nombre || typeof nombre !== 'string' || nombre.trim().length === 0) {
         res.status(400).json({
@@ -36,7 +47,7 @@ export class PaqueteController {
         return;
       }
 
-      if (cantidad_fotos === undefined || typeof cantidad_fotos !== 'number' || cantidad_fotos <= 0) {
+      if (isNaN(parsedCantidadFotos) || parsedCantidadFotos <= 0) {
         res.status(400).json({
           success: false,
           message: 'La cantidad de fotos es requerida y debe ser un número positivo'
@@ -44,7 +55,7 @@ export class PaqueteController {
         return;
       }
 
-      if (precio === undefined || typeof precio !== 'number' || precio <= 0) {
+      if (isNaN(parsedPrecio) || parsedPrecio <= 0) {
         res.status(400).json({
           success: false,
           message: 'El precio es requerido y debe ser un número positivo'
@@ -52,58 +63,29 @@ export class PaqueteController {
         return;
       }
 
-      if (estado === undefined || typeof estado !== 'boolean') {
-        res.status(400).json({
-          success: false,
-          message: 'El estado es requerido y debe ser un valor booleano'
-        });
-        return;
-      }
+      // Procesar imagen si fue enviada
+      let imagenUrl: string | undefined = undefined;
+      if (req.file) {
+        // Generar key única para S3
+        const timestamp = Date.now();
+        const key = `paquetes/${timestamp}-${req.file.originalname}`;
 
-      // Validaciones adicionales para campos opcionales
-      if (categoria_id !== undefined && typeof categoria_id !== 'number') {
-        res.status(400).json({
-          success: false,
-          message: 'categoria_id debe ser un número o no proporcionado'
-        });
-        return;
-      }
-
-      if (resolucion_foto !== undefined && (typeof resolucion_foto !== 'number' || resolucion_foto <= 0)) {
-        res.status(400).json({
-          success: false,
-          message: 'resolucion_foto debe ser un número positivo o no proporcionado'
-        });
-        return;
-      }
-
-      if (ancho_foto !== undefined && (typeof ancho_foto !== 'number' || ancho_foto <= 0)) {
-        res.status(400).json({
-          success: false,
-          message: 'ancho_foto debe ser un número positivo o no proporcionado'
-        });
-        return;
-      }
-
-      if (alto_foto !== undefined && (typeof alto_foto !== 'number' || alto_foto <= 0)) {
-        res.status(400).json({
-          success: false,
-          message: 'alto_foto debe ser un número positivo o no proporcionado'
-        });
-        return;
+        // Subir a S3
+        imagenUrl = await this.s3Service.uploadFile(req.file, key);
       }
 
       // Ejecutar el caso de uso
       const result = await this.crearPaqueteUseCase.execute(
         nombre.trim(),
-        categoria_id,
+        parsedCategoriaId,
         descripcion,
-        cantidad_fotos,
-        precio,
-        estado,
-        resolucion_foto,
-        ancho_foto,
-        alto_foto
+        parsedCantidadFotos,
+        parsedPrecio,
+        parsedEstado,
+        parsedResolucionFoto,
+        parsedAnchoFoto,
+        parsedAltoFoto,
+        imagenUrl
       );
 
       if (result.success) {
@@ -256,18 +238,39 @@ export class PaqueteController {
         return;
       }
 
+      // Convertir valores de string a los tipos correctos (cuando vienen de form-data)
+      const parsedCategoriaId = categoria_id ? parseInt(categoria_id) : undefined;
+      const parsedCantidadFotos = cantidad_fotos ? parseInt(cantidad_fotos) : undefined;
+      const parsedPrecio = precio ? parseFloat(precio) : undefined;
+      const parsedEstado = estado !== undefined ? (estado === 'true' || estado === true) : undefined;
+      const parsedResolucionFoto = resolucion_foto ? parseInt(resolucion_foto) : undefined;
+      const parsedAnchoFoto = ancho_foto ? parseFloat(ancho_foto) : undefined;
+      const parsedAltoFoto = alto_foto ? parseFloat(alto_foto) : undefined;
+
+      // Procesar imagen si fue enviada
+      let imagenUrl: string | undefined = undefined;
+      if (req.file) {
+        // Generar key única para S3
+        const timestamp = Date.now();
+        const key = `paquetes/${timestamp}-${req.file.originalname}`;
+
+        // Subir a S3
+        imagenUrl = await this.s3Service.uploadFile(req.file, key);
+      }
+
       // Ejecutar el caso de uso de actualización
       const result = await this.actualizarPaqueteUseCase.execute(
         idNum,
         nombre,
-        categoria_id,
+        parsedCategoriaId,
         descripcion,
-        cantidad_fotos,
-        precio,
-        estado,
-        resolucion_foto,
-        ancho_foto,
-        alto_foto
+        parsedCantidadFotos,
+        parsedPrecio,
+        parsedEstado,
+        parsedResolucionFoto,
+        parsedAnchoFoto,
+        parsedAltoFoto,
+        imagenUrl
       );
 
       if (result.success) {

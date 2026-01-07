@@ -25,7 +25,8 @@ export class ActualizarPaqueteUseCase {
     estado?: boolean,
     resolucion_foto?: number,
     ancho_foto?: number,
-    alto_foto?: number
+    alto_foto?: number,
+    imagen_url?: string
   ): Promise<ActualizarPaqueteResult> {
     try {
       // Verificar si el paquete existe
@@ -128,7 +129,8 @@ export class ActualizarPaqueteUseCase {
         estado: estado !== undefined ? estado : paqueteExistente.estado,
         resolucion_foto: resolucion_foto !== undefined ? resolucion_foto : paqueteExistente.resolucion_foto,
         ancho_foto: ancho_foto !== undefined ? ancho_foto : paqueteExistente.ancho_foto,
-        alto_foto: alto_foto !== undefined ? alto_foto : paqueteExistente.alto_foto
+        alto_foto: alto_foto !== undefined ? alto_foto : paqueteExistente.alto_foto,
+        imagen_url: imagen_url !== undefined ? imagen_url : paqueteExistente.imagen_url
       };
 
       const paqueteGuardado = await this.paqueteRepository.update(paqueteActualizado);
