@@ -148,35 +148,23 @@ export class CrearSesionCheckoutUseCase {
         }
       }
 
-      // Calcular y verificar totales
-      const subtotalCalculado = items.reduce((acc, item) => acc + (item.precio_unitario * item.cantidad), 0);
-      if (Math.abs(subtotalCalculado - subtotal) > 0.01) {
-        return {
-          success: false,
-          message: 'El subtotal no coincide con la suma de los items',
-          error: 'Subtotal inconsistente'
-        };
-      }
+      // Calcular y verificar total
+      // IMPORTANTE: Los precios ya incluyen IVA, no se calcula por separado
+      const totalCalculado = items.reduce((acc, item) => acc + (item.precio_unitario * item.cantidad), 0);
 
-      // Verificar IVA (16%)
-      const ivaCalculado = subtotalCalculado * 0.16;
-      if (Math.abs(ivaCalculado - iva) > 0.01) {
-        return {
-          success: false,
-          message: 'El IVA calculado no coincide',
-          error: 'IVA inconsistente'
-        };
-      }
-
-      // Verificar total
-      const totalCalculado = subtotalCalculado + ivaCalculado;
+      // Validar que el total enviado coincida con la suma de items (tolerancia ±0.01)
       if (Math.abs(totalCalculado - total) > 0.01) {
         return {
           success: false,
-          message: 'El total no coincide con subtotal + IVA',
+          message: `El total no coincide con la suma de items. Esperado: ${totalCalculado.toFixed(2)}, Recibido: ${total.toFixed(2)}`,
           error: 'Total inconsistente'
         };
       }
+
+      // NOTA: subtotal e iva se aceptan tal como vienen del frontend
+      // y se almacenan solo como referencia (ya no se validan)
+      // El frontend envía: subtotal = total, iva = 0
+      // porque los precios ya incluyen el IVA mexicano (16%)
 
       // Crear sesión de checkout en Stripe
       const sessionResult = await this.stripeService.createCheckoutSession({
