@@ -9,6 +9,7 @@ export interface Usuario {
   telefono?: string;
   fecha_registro?: Date;
   activo?: boolean;
+  acepto_terminos?: boolean;
   tipo?: TipoUsuario;
   fecha_ultima_conexion?: Date;
   token_recuperacion?: string;
@@ -24,6 +25,7 @@ export class UsuarioEntity implements Usuario {
   public telefono?: string;
   public fecha_registro: Date;
   public activo: boolean;
+  public acepto_terminos: boolean;
   public tipo?: TipoUsuario;
 
   constructor(
@@ -33,6 +35,7 @@ export class UsuarioEntity implements Usuario {
     apellido: string,
     tipo?: TipoUsuario,
     telefono?: string,
+    acepto_terminos?: boolean,
     id?: number,
     fecha_ultima_conexion?: Date,
     token_recuperacion?: string,
@@ -46,6 +49,7 @@ export class UsuarioEntity implements Usuario {
     this.telefono = telefono;
     this.fecha_registro = new Date();
     this.activo = true;
+    this.acepto_terminos = acepto_terminos ?? false;
     this.tipo = tipo;
     this.fecha_ultima_conexion = fecha_ultima_conexion;
     this.token_recuperacion = token_recuperacion;
@@ -59,6 +63,7 @@ export class UsuarioEntity implements Usuario {
     apellido: string,
     tipo?: TipoUsuario,
     telefono?: string,
+    acepto_terminos?: boolean,
     fecha_ultima_conexion?: Date,
     token_recuperacion?: string,
     fecha_expiracion_token?: Date
@@ -70,6 +75,7 @@ export class UsuarioEntity implements Usuario {
       apellido,
       tipo,
       telefono,
+      acepto_terminos,
       undefined, // id es opcional
       fecha_ultima_conexion,
       token_recuperacion,

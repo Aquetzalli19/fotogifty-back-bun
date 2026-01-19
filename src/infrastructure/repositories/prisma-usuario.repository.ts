@@ -139,6 +139,7 @@ export class PrismaUsuarioRepository implements UsuarioRepositoryPort {
       telefono: prismaUsuario.telefono,
       fecha_registro: prismaUsuario.fecha_registro,
       activo: prismaUsuario.activo,
+      acepto_terminos: prismaUsuario.acepto_terminos,
       tipo: tipoUsuario,
       fecha_ultima_conexion: prismaUsuario.fecha_ultima_conexion,
       token_recuperacion: prismaUsuario.token_recuperacion,
@@ -154,6 +155,7 @@ export class PrismaUsuarioRepository implements UsuarioRepositoryPort {
       apellido: usuario.apellido,
       telefono: usuario.telefono,
       activo: usuario.activo,
+      acepto_terminos: usuario.acepto_terminos ?? false,
       fecha_ultima_conexion: usuario.fecha_ultima_conexion,
       token_recuperacion: usuario.token_recuperacion,
       fecha_expiracion_token: usuario.fecha_expiracion_token

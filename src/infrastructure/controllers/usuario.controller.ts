@@ -13,13 +13,22 @@ export class UsuarioController {
 
   async crearUsuario(req: Request, res: Response): Promise<void> {
     try {
-      const { email, password, nombre, apellido, telefono } = req.body;
+      const { email, password, nombre, apellido, telefono, acepto_terminos } = req.body;
 
       // Validaciones básicas
       if (!email || !password || !nombre || !apellido) {
         res.status(400).json({
           success: false,
           message: 'Email, password, nombre y apellido son requeridos'
+        });
+        return;
+      }
+
+      // Validar que aceptó los términos y condiciones
+      if (!acepto_terminos) {
+        res.status(400).json({
+          success: false,
+          message: 'Debes aceptar los términos y condiciones para registrarte'
         });
         return;
       }
@@ -52,7 +61,8 @@ export class UsuarioController {
         nombre,
         apellido,
         TipoUsuario.CLIENTE,
-        telefono
+        telefono,
+        acepto_terminos
       );
 
       const result = await this.crearUsuarioUseCase.execute(nuevoUsuario);

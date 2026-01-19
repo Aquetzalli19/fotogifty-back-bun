@@ -15,6 +15,7 @@ import webhookRoutes from './webhook.routes';
 import storeAuthRoutes from './store-auth.routes';
 import imageValidationRoutes from './image-validation.routes';
 import analyticsRoutes from './analytics.routes';
+import documentoLegalRoutes from './documento-legal.routes';
 
 const configureRoutes = (): Router => {
   const router = Router();
@@ -39,6 +40,7 @@ const configureRoutes = (): Router => {
   storeAuthRoutes(apiRouter);
   imageValidationRoutes(apiRouter);
   analyticsRoutes(apiRouter);
+  documentoLegalRoutes(apiRouter);
   router.use('/api', apiRouter);
 
   return router;

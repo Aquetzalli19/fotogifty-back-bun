@@ -16,6 +16,7 @@ model usuarios {
   telefono              String?                @db.VarChar(20)
   fecha_registro        DateTime               @default(now())
   activo                Boolean                @default(true)
+  acepto_terminos       Boolean                @default(false)
   fecha_ultima_conexion DateTime?              @db.DateTime
   token_recuperacion    String?                @db.VarChar(255)
   fecha_expiracion_token DateTime?             @db.DateTime
@@ -199,4 +200,20 @@ model stores {
   fecha_contratacion DateTime @default(now())
   activo             Boolean  @default(true)
   usuario            usuarios @relation(fields: [usuario_id], references: [id])
+}
+
+enum TipoDocumentoLegal {
+  terms
+  privacy
+}
+
+model documentos_legales {
+  id                  Int                 @id @default(autoincrement())
+  tipo                TipoDocumentoLegal
+  titulo              String              @db.VarChar(255)
+  contenido           String              @db.Text
+  version             String              @db.VarChar(50)
+  activo              Boolean             @default(false)
+  fecha_creacion      DateTime            @default(now())
+  fecha_actualizacion DateTime            @default(now()) @updatedAt
 }
