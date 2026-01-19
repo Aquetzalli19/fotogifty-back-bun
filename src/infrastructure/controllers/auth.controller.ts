@@ -1,18 +1,24 @@
 import { Request, Response } from 'express';
 import { UsuarioConTipo } from '../../domain/entities/tipo-usuario.entity';
 import { LoginUseCase } from '../../application/use-cases/login.use-case';
+import { VerificarIdentidadUseCase } from '@application/use-cases/verificar-identidad.use-case';
+import { RecuperarPasswordUseCase } from '@application/use-cases/recuperar-password.use-case';
 import { TokenService } from '../services/token.service';
 import { PasswordService } from '../services/password.service';
 import { UsuarioRepositoryPort } from '../../domain/ports/usuario.repository.port';
 
 export class AuthController {
   private tokenService: TokenService;
+  private verificarIdentidadUseCase: VerificarIdentidadUseCase;
+  private recuperarPasswordUseCase: RecuperarPasswordUseCase;
 
   constructor(
     private loginUseCase: LoginUseCase,
     private usuarioRepository: UsuarioRepositoryPort
   ) {
     this.tokenService = new TokenService();
+    this.verificarIdentidadUseCase = new VerificarIdentidadUseCase(usuarioRepository);
+    this.recuperarPasswordUseCase = new RecuperarPasswordUseCase(usuarioRepository);
   }
 
   async loginCliente(req: Request, res: Response): Promise<void> {
@@ -214,6 +220,80 @@ export class AuthController {
       });
     } catch (error) {
       console.error('Error en getMe:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Error interno del servidor'
+      });
+    }
+  }
+
+  async verificarIdentidad(req: Request, res: Response): Promise<void> {
+    try {
+      const { email, telefono } = req.body;
+
+      // Validación de entrada
+      if (!email || !telefono) {
+        res.status(400).json({
+          success: false,
+          message: 'Email y teléfono son requeridos'
+        });
+        return;
+      }
+
+      const result = await this.verificarIdentidadUseCase.execute(email, telefono);
+
+      if (result.success) {
+        res.status(200).json({
+          success: true,
+          message: result.message
+        });
+      } else {
+        // Usar 404 para "datos no coinciden" o 400 para validación
+        const statusCode = result.message?.includes('no coinciden') ? 404 : 400;
+        res.status(statusCode).json({
+          success: false,
+          message: result.message
+        });
+      }
+    } catch (error: any) {
+      console.error('Error en verificarIdentidad:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Error interno del servidor'
+      });
+    }
+  }
+
+  async recuperarPassword(req: Request, res: Response): Promise<void> {
+    try {
+      const { email, telefono, nueva_password } = req.body;
+
+      // Validación de entrada
+      if (!email || !telefono || !nueva_password) {
+        res.status(400).json({
+          success: false,
+          message: 'Todos los campos son requeridos'
+        });
+        return;
+      }
+
+      const result = await this.recuperarPasswordUseCase.execute(email, telefono, nueva_password);
+
+      if (result.success) {
+        res.status(200).json({
+          success: true,
+          message: result.message
+        });
+      } else {
+        // Usar 404 para "datos no coinciden" o 400 para validación
+        const statusCode = result.message?.includes('no coinciden') ? 404 : 400;
+        res.status(statusCode).json({
+          success: false,
+          message: result.message
+        });
+      }
+    } catch (error: any) {
+      console.error('Error en recuperarPassword:', error);
       res.status(500).json({
         success: false,
         message: 'Error interno del servidor'
