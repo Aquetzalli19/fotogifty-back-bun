@@ -450,7 +450,7 @@ export class UsuarioController {
       }
 
       // Verificar la contraseña actual
-      const isCurrentPasswordValid = await bcrypt.compare(currentPassword, usuario.password_hash);
+      const isCurrentPasswordValid = await PasswordService.verifyPassword(currentPassword, usuario.password_hash);
       if (!isCurrentPasswordValid) {
         res.status(401).json({
           success: false,
@@ -460,8 +460,7 @@ export class UsuarioController {
       }
 
       // Hashear la nueva contraseña
-      const saltRounds = 10;
-      const newPasswordHash = await bcrypt.hash(newPassword, saltRounds);
+      const newPasswordHash = await PasswordService.hashPassword(newPassword);
 
       // Actualizar la contraseña
       const usuarioConNuevaContrasena = {
