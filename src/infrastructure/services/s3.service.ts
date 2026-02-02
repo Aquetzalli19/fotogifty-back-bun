@@ -77,6 +77,42 @@ export class S3Service {
   }
 
   /**
+   * Descarga un archivo de S3 como Buffer
+   */
+  async downloadFile(key: string): Promise<Buffer> {
+    const command = new GetObjectCommand({
+      Bucket: this.bucketName,
+      Key: key
+    });
+
+    const response = await this.s3Client.send(command);
+
+    if (!response.Body) {
+      throw new Error(`No se pudo descargar el archivo: ${key}`);
+    }
+
+    // Convertir el stream a buffer
+    const chunks: Uint8Array[] = [];
+    for await (const chunk of response.Body as any) {
+      chunks.push(chunk);
+    }
+
+    return Buffer.concat(chunks);
+  }
+
+  /**
+   * Extrae la key de S3 desde una URL completa
+   */
+  extractKeyFromUrl(url: string): string {
+    // URL format: https://bucketname.s3.region.amazonaws.com/key
+    const urlParts = url.split('.amazonaws.com/');
+    if (urlParts.length > 1) {
+      return urlParts[1];
+    }
+    throw new Error(`URL de S3 inválida: ${url}`);
+  }
+
+  /**
    * Extrae el nombre del archivo de la key de S3
    */
   private getFilenameFromKey(key: string): string {

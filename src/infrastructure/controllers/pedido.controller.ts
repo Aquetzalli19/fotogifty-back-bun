@@ -2,6 +2,7 @@ import { Request, Response } from 'express';
 import { PedidoEntity, EstadoPedido } from '../../domain/entities/pedido.entity';
 import { CrearPedidoUseCase } from '../../application/use-cases/crear-pedido.use-case';
 import { ActualizarEstadoPedidoUseCase } from '../../application/use-cases/actualizar-estado-pedido.use-case';
+import { DescargarPedidoZipUseCase } from '../../application/use-cases/descargar-pedido-zip.use-case';
 import { PedidoRepositoryPort } from '../../domain/ports/pedido.repository.port';
 import { UsuarioRepositoryPort } from '../../domain/ports/usuario.repository.port';
 import { PaqueteRepositoryPort } from '../../domain/ports/paquete.repository.port';
@@ -12,6 +13,7 @@ export class PedidoController {
   constructor(
     private crearPedidoUseCase: CrearPedidoUseCase,
     private actualizarEstadoPedidoUseCase: ActualizarEstadoPedidoUseCase,
+    private descargarPedidoZipUseCase: DescargarPedidoZipUseCase,
     private pedidoRepository: PedidoRepositoryPort,
     private usuarioRepository: UsuarioRepositoryPort,
     private paqueteRepository: PaqueteRepositoryPort,
@@ -314,6 +316,38 @@ export class PedidoController {
         success: false,
         message: 'Error interno del servidor'
       });
+    }
+  }
+
+  async downloadPedidoZip(req: Request, res: Response): Promise<void> {
+    try {
+      const { id } = req.params;
+      const user = (req as any).user; // Usuario del middleware de autenticación
+
+      const pedidoId = parseInt(id, 10);
+      if (isNaN(pedidoId)) {
+        res.status(400).json({
+          success: false,
+          message: 'ID de pedido inválido'
+        });
+        return;
+      }
+
+      // Ejecutar el caso de uso (maneja su propia respuesta)
+      await this.descargarPedidoZipUseCase.execute({
+        pedidoId,
+        usuarioId: user?.id || 0,
+        tipoUsuario: user?.tipo_usuario || 'CLIENTE',
+        response: res
+      });
+    } catch (error) {
+      console.error('Error en downloadPedidoZip:', error);
+      if (!res.headersSent) {
+        res.status(500).json({
+          success: false,
+          message: 'Error interno del servidor'
+        });
+      }
     }
   }
 }

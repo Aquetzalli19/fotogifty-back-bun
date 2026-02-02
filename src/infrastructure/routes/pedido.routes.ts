@@ -3,6 +3,7 @@ import multer from 'multer';
 import { PedidoController } from '../controllers/pedido.controller';
 import { CrearPedidoUseCase } from '../../application/use-cases/crear-pedido.use-case';
 import { ActualizarEstadoPedidoUseCase } from '../../application/use-cases/actualizar-estado-pedido.use-case';
+import { DescargarPedidoZipUseCase } from '../../application/use-cases/descargar-pedido-zip.use-case';
 import { PrismaPedidoRepository } from '../repositories/prisma-pedido.repository';
 import { PrismaUsuarioRepository } from '../repositories/prisma-usuario.repository';
 import { PrismaPaqueteRepository } from '../repositories/prisma-paquete.repository';
@@ -80,8 +81,9 @@ const pedidoRoutes = (router: Router): void => {
   const s3Service = new S3Service();
   const crearPedidoUseCase = new CrearPedidoUseCase(pedidoRepository, usuarioRepository, paqueteRepository);
   const actualizarEstadoPedidoUseCase = new ActualizarEstadoPedidoUseCase(pedidoRepository);
+  const descargarPedidoZipUseCase = new DescargarPedidoZipUseCase(pedidoRepository, s3Service);
   const subirFotoUseCase = new SubirFotoUseCase(s3Service, usuarioRepository, pedidoRepository, itemsPedidoRepository, paqueteRepository, fotoRepository);
-  const pedidoController = new PedidoController(crearPedidoUseCase, actualizarEstadoPedidoUseCase, pedidoRepository, usuarioRepository, paqueteRepository, fotoRepository, itemsPedidoRepository);
+  const pedidoController = new PedidoController(crearPedidoUseCase, actualizarEstadoPedidoUseCase, descargarPedidoZipUseCase, pedidoRepository, usuarioRepository, paqueteRepository, fotoRepository, itemsPedidoRepository);
 
   /**
    * @swagger
@@ -478,6 +480,64 @@ const pedidoRoutes = (router: Router): void => {
    */
   router.get('/items-pedido/:itemPedidoId/resumen-copias', authenticateToken, (req, res) =>
     pedidoController.obtenerResumenCopias(req, res)
+  );
+
+  /**
+   * @swagger
+   * /api/pedidos/{id}/fotos/download-zip:
+   *   get:
+   *     summary: Descargar fotos de pedido en ZIP con metadatos EXIF
+   *     description: Genera un archivo ZIP con todas las fotos del pedido, procesadas con DPI 300, perfil sRGB IEC61966-2.1 y metadatos EXIF embebidos. Incluye archivo metadata.txt con información del pedido.
+   *     tags: [Pedidos]
+   *     parameters:
+   *       - in: path
+   *         name: id
+   *         required: true
+   *         schema:
+   *           type: integer
+   *         description: ID del pedido
+   *     security:
+   *       - bearerAuth: []
+   *     responses:
+   *       200:
+   *         description: Archivo ZIP con las fotos procesadas
+   *         content:
+   *           application/zip:
+   *             schema:
+   *               type: string
+   *               format: binary
+   *         headers:
+   *           Content-Disposition:
+   *             schema:
+   *               type: string
+   *               example: attachment; filename="pedido-123-2024-02-02.zip"
+   *       400:
+   *         description: ID de pedido inválido
+   *       403:
+   *         description: Sin permisos (solo admin/super_admin/store)
+   *       404:
+   *         description: Pedido no encontrado o sin fotos
+   *         content:
+   *           application/json:
+   *             schema:
+   *               type: object
+   *               properties:
+   *                 success:
+   *                   type: boolean
+   *                   example: false
+   *                 error:
+   *                   type: string
+   *                   example: No se encontraron fotos para este pedido
+   *                 code:
+   *                   type: string
+   *                   example: NO_PHOTOS_FOUND
+   *       401:
+   *         description: Acceso no autorizado
+   *       500:
+   *         description: Error del servidor
+   */
+  router.get('/pedidos/:id/fotos/download-zip', authenticateToken, requireRole('admin', 'super_admin', 'store'), (req, res) =>
+    pedidoController.downloadPedidoZip(req, res)
   );
 
   /**

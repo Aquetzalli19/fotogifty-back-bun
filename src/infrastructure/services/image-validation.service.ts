@@ -293,4 +293,76 @@ export class ImageValidationService {
       dpi: metadata.density
     };
   }
+
+  /**
+   * Procesa imagen para descarga con metadatos EXIF completos
+   * Incluye DPI, perfil sRGB y metadatos personalizados (copyright, artist)
+   */
+  static async processImageWithFullMetadata(
+    buffer: Buffer,
+    dpi: number = 300,
+    metadata?: {
+      copyright?: string;
+      artist?: string;
+      description?: string;
+    }
+  ): Promise<{ buffer: Buffer; format: string }> {
+    const image = sharp(buffer);
+    const imageMetadata = await image.metadata();
+    const format = imageMetadata.format || 'jpeg';
+
+    // Preparar metadatos EXIF
+    const exifData: any = {
+      IFD0: {} as any
+    };
+
+    if (metadata?.copyright) {
+      exifData.IFD0.Copyright = metadata.copyright;
+    }
+
+    if (metadata?.artist) {
+      exifData.IFD0.Artist = metadata.artist;
+    }
+
+    if (metadata?.description) {
+      exifData.IFD0.ImageDescription = metadata.description;
+    }
+
+    // Siempre agregar software
+    exifData.IFD0.Software = 'FotoGifty Platform';
+
+    // Convertir a espacio de color sRGB y embeber metadatos completos
+    let processedImage = image
+      .toColorspace('srgb')
+      .withMetadata({
+        density: dpi,
+        icc: 'srgb',
+        exif: exifData
+      });
+
+    // Convertir según el formato
+    let outputBuffer: Buffer;
+    if (format === 'png') {
+      outputBuffer = await processedImage
+        .png({
+          compressionLevel: 9,
+          adaptiveFiltering: true
+        })
+        .toBuffer();
+    } else {
+      // JPEG por defecto
+      outputBuffer = await processedImage
+        .jpeg({
+          quality: 95,
+          chromaSubsampling: '4:4:4',
+          mozjpeg: true
+        })
+        .toBuffer();
+    }
+
+    return {
+      buffer: outputBuffer,
+      format: format === 'png' ? 'png' : 'jpg'
+    };
+  }
 }
