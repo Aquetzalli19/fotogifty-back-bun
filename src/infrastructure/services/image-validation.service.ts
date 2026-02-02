@@ -226,10 +226,10 @@ export class ImageValidationService {
   }
 
   /**
-   * Embebe metadatos DPI en la imagen
-   * Retorna un nuevo buffer con los DPI correctos
+   * Procesa imagen para impresión: embebe DPI y perfil ICC sRGB IEC61966-2.1
+   * Retorna un nuevo buffer con DPI y perfil de color embebidos
    */
-  static async embedDPI(
+  static async processImageForPrint(
     buffer: Buffer,
     dpi: number = 300
   ): Promise<{ buffer: Buffer; format: string }> {
@@ -240,12 +240,13 @@ export class ImageValidationService {
     // Determinar el formato de salida
     const format = metadata.format || 'jpeg';
 
-    // IMPORTANTE: Primero remover metadatos existentes para evitar conflictos
-    // Luego agregar solo density (Sharp lo maneja correctamente)
+    // Convertir a espacio de color sRGB y embeber perfil ICC + DPI
+    // Sharp convierte automáticamente desde cualquier espacio de color (Adobe RGB, ProPhoto, etc.)
     let processedImage = image
-      .withMetadata(false)  // Remover EXIF problemáticos del navegador
+      .toColorspace('srgb')  // Convertir píxeles a espacio sRGB
       .withMetadata({
-        density: dpi  // Sharp maneja esto correctamente internamente
+        density: dpi,        // Embeber DPI en metadatos EXIF
+        icc: 'srgb'          // Embeber perfil ICC sRGB IEC61966-2.1 (built-in Sharp)
       });
 
     // Convertir según el formato
@@ -271,6 +272,25 @@ export class ImageValidationService {
     return {
       buffer: outputBuffer,
       format: format === 'png' ? 'png' : 'jpg'
+    };
+  }
+
+  /**
+   * Verifica que una imagen tenga perfil ICC embebido
+   * Útil para testing y validación
+   */
+  static async verifyICCProfile(buffer: Buffer): Promise<{
+    hasICC: boolean;
+    profileName?: string;
+    dpi?: number;
+  }> {
+    const image = sharp(buffer);
+    const metadata = await image.metadata();
+
+    return {
+      hasICC: !!metadata.icc,
+      profileName: metadata.space, // 'srgb', 'rgb', 'cmyk', etc.
+      dpi: metadata.density
     };
   }
 }

@@ -89,9 +89,9 @@ export class SubirFotoUseCase {
     const imageMetadata = validationResult.metadata;
     const dpi_real = imageMetadata.dpi || resolucion_esperada; // Usar el esperado si no hay DPI
 
-    // Embedir los DPI correctos en la imagen antes de subir a S3
-    console.log(`📸 Embebiendo DPI (${resolucion_esperada}) en imagen...`);
-    const imageWithDPI = await ImageValidationService.embedDPI(
+    // Procesar imagen para impresión: embeber DPI + perfil sRGB
+    console.log(`📸 Procesando imagen: ${resolucion_esperada} DPI + perfil sRGB...`);
+    const imageWithDPI = await ImageValidationService.processImageForPrint(
       file.buffer,
       resolucion_esperada
     );
@@ -104,8 +104,8 @@ export class SubirFotoUseCase {
     // Determinar content type
     const contentType = imageWithDPI.format === 'png' ? 'image/png' : 'image/jpeg';
 
-    // Subir archivo procesado (con DPI embebidos) a S3
-    console.log(`☁️  Subiendo a S3 con DPI embebidos: ${resolucion_esperada} DPI`);
+    // Subir archivo procesado (con DPI y perfil sRGB embebidos) a S3
+    console.log(`☁️  Subiendo a S3 (${resolucion_esperada} DPI, perfil sRGB embebido)`);
     const url = await this.s3Service.uploadBuffer(
       imageWithDPI.buffer,
       key,
