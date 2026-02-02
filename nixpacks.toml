@@ -1,0 +1,23 @@
+[phases.setup]
+nixPkgs = [
+  "nodejs_22",
+  "bun",
+  "vips",           # Requerido por Sharp
+  "pkg-config",     # Requerido por Sharp
+  "glib",           # Requerido por Sharp
+  "cairo",          # Requerido por Sharp
+  "pango"           # Requerido por Sharp
+]
+
+[phases.install]
+cmds = [
+  "bun install --frozen-lockfile"
+]
+
+[phases.build]
+cmds = [
+  "bun run build"
+]
+
+[start]
+cmd = "bun run start"
