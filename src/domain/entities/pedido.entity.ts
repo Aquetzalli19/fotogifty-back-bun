@@ -16,6 +16,7 @@ export interface FotoDetalle {
   resolucion_foto?: number;
   tamanio_archivo: number;
   id_item_pedido: number;
+  cantidad_copias?: number;  // Cantidad de copias físicas a imprimir
 }
 
 export enum EstadoPedido {

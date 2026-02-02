@@ -286,7 +286,8 @@ export class PrismaPedidoRepository implements PedidoRepositoryPort {
         alto_foto: foto.alto_foto ? Number(foto.alto_foto) : undefined,
         resolucion_foto: foto.resolucion_foto,
         tamanio_archivo: foto.tamaño_archivo,
-        id_item_pedido: foto.item_pedido_id
+        id_item_pedido: foto.item_pedido_id,
+        cantidad_copias: foto.cantidad_copias
       })) || [],
       // ⚠️ Deprecated (mantener por compatibilidad)
       imagenes: prismaPedido.fotos?.map((foto: any) => foto.ruta_almacenamiento) || [],
