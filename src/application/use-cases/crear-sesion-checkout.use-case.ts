@@ -2,6 +2,9 @@ import { StripeService, CreateCheckoutSessionParams, CheckoutSessionResult } fro
 import { UsuarioRepositoryPort } from '../../domain/ports/usuario.repository.port';
 import { PaqueteRepositoryPort } from '../../domain/ports/paquete.repository.port';
 import { DireccionRepositoryPort } from '../../domain/ports/direccion.repository.port';
+import { AceptacionTerminosRepositoryPort } from '@domain/ports/aceptacion-terminos.repository.port';
+import { DocumentoLegalRepositoryPort } from '@domain/ports/documento-legal.repository.port';
+import { TipoDocumentoLegal } from '@domain/entities/documento-legal.entity';
 import { MetodoEntrega } from '../../domain/entities/pedido.entity';
 
 interface ItemCheckout {
@@ -40,7 +43,9 @@ export class CrearSesionCheckoutUseCase {
     private readonly stripeService: StripeService,
     private readonly usuarioRepository: UsuarioRepositoryPort,
     private readonly paqueteRepository: PaqueteRepositoryPort,
-    private readonly direccionRepository: DireccionRepositoryPort
+    private readonly direccionRepository: DireccionRepositoryPort,
+    private readonly aceptacionTerminosRepository?: AceptacionTerminosRepositoryPort,
+    private readonly documentoLegalRepository?: DocumentoLegalRepositoryPort
   ) {}
 
   async execute(input: CrearSesionCheckoutInput): Promise<CrearSesionCheckoutResult> {
@@ -95,6 +100,27 @@ export class CrearSesionCheckoutUseCase {
           message: 'El usuario especificado no existe',
           error: 'Usuario no encontrado'
         };
+      }
+
+      // Verificar que el usuario haya aceptado los términos
+      if (this.aceptacionTerminosRepository && this.documentoLegalRepository) {
+        const termsActivo = await this.documentoLegalRepository.findActivoByTipo(TipoDocumentoLegal.TERMS);
+
+        if (termsActivo) {
+          const hasAccepted = await this.aceptacionTerminosRepository.hasAcceptedCurrentVersion(
+            id_usuario,
+            TipoDocumentoLegal.TERMS,
+            termsActivo.version
+          );
+
+          if (!hasAccepted) {
+            return {
+              success: false,
+              message: 'Debe aceptar los términos y condiciones antes de realizar una compra',
+              error: 'TERMS_NOT_ACCEPTED'
+            };
+          }
+        }
       }
 
       // Verificar que la dirección exista y pertenezca al usuario (solo para envío a domicilio)

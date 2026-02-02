@@ -8,23 +8,24 @@ datasource db {
 }
 
 model usuarios {
-  id                    Int                    @id @default(autoincrement())
-  email                 String                 @unique @db.VarChar(255)
-  password_hash         String                 @db.VarChar(255)
-  nombre                String                 @db.VarChar(100)
-  apellido              String                 @db.VarChar(100)
-  telefono              String?                @db.VarChar(20)
-  fecha_registro        DateTime               @default(now())
-  activo                Boolean                @default(true)
-  acepto_terminos       Boolean                @default(false)
-  fecha_ultima_conexion DateTime?              @db.DateTime
-  token_recuperacion    String?                @db.VarChar(255)
-  fecha_expiracion_token DateTime?             @db.DateTime
+  id                    Int                      @id @default(autoincrement())
+  email                 String                   @unique @db.VarChar(255)
+  password_hash         String                   @db.VarChar(255)
+  nombre                String                   @db.VarChar(100)
+  apellido              String                   @db.VarChar(100)
+  telefono              String?                  @db.VarChar(20)
+  fecha_registro        DateTime                 @default(now())
+  activo                Boolean                  @default(true)
+  acepto_terminos       Boolean                  @default(false)
+  fecha_ultima_conexion DateTime?                @db.DateTime
+  token_recuperacion    String?                  @db.VarChar(255)
+  fecha_expiracion_token DateTime?               @db.DateTime
   administrador         administradores?
+  aceptaciones_terminos aceptaciones_terminos[]
   direcciones           direcciones[]
   fotos                 fotos[]
   pedidos               pedidos[]
-  stores stores?
+  stores                stores?
 }
 
 model direcciones {
@@ -210,12 +211,29 @@ enum TipoDocumentoLegal {
 }
 
 model documentos_legales {
-  id                  Int                 @id @default(autoincrement())
+  id                  Int                      @id @default(autoincrement())
   tipo                TipoDocumentoLegal
-  titulo              String              @db.VarChar(255)
-  contenido           String              @db.Text
+  titulo              String                   @db.VarChar(255)
+  contenido           String                   @db.Text
+  version             String                   @db.VarChar(50)
+  activo              Boolean                  @default(false)
+  fecha_creacion      DateTime                 @default(now())
+  fecha_actualizacion DateTime                 @default(now()) @updatedAt
+  aceptaciones        aceptaciones_terminos[]
+}
+
+model aceptaciones_terminos {
+  id                  Int                 @id @default(autoincrement())
+  usuario_id          Int
+  documento_legal_id  Int
   version             String              @db.VarChar(50)
-  activo              Boolean             @default(false)
-  fecha_creacion      DateTime            @default(now())
-  fecha_actualizacion DateTime            @default(now()) @updatedAt
+  fecha_aceptacion    DateTime            @default(now())
+  ip_address          String?             @db.VarChar(45)
+  user_agent          String?             @db.Text
+  usuario             usuarios            @relation(fields: [usuario_id], references: [id], onDelete: Cascade)
+  documento_legal     documentos_legales  @relation(fields: [documento_legal_id], references: [id], onDelete: Cascade)
+
+  @@index([usuario_id, documento_legal_id], map: "idx_usuario_documento")
+  @@index([usuario_id], map: "aceptaciones_terminos_usuario_id_fkey")
+  @@index([documento_legal_id], map: "aceptaciones_terminos_documento_legal_id_fkey")
 }

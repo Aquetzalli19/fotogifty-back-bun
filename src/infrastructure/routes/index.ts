@@ -16,6 +16,7 @@ import storeAuthRoutes from './store-auth.routes';
 import imageValidationRoutes from './image-validation.routes';
 import analyticsRoutes from './analytics.routes';
 import documentoLegalRoutes from './documento-legal.routes';
+import aceptacionTerminosRoutes from './aceptacion-terminos.routes';
 
 const configureRoutes = (): Router => {
   const router = Router();
@@ -41,6 +42,7 @@ const configureRoutes = (): Router => {
   imageValidationRoutes(apiRouter);
   analyticsRoutes(apiRouter);
   documentoLegalRoutes(apiRouter);
+  aceptacionTerminosRoutes(apiRouter);
   router.use('/api', apiRouter);
 
   return router;

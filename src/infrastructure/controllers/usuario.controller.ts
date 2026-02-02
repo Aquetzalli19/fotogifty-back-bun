@@ -1,14 +1,17 @@
 import { Request, Response } from 'express';
 import { CrearUsuarioUseCase } from '../../application/use-cases/crear-usuario.use-case';
+import { AceptarTerminosUseCase } from '@application/use-cases/aceptar-terminos.use-case';
 import { UsuarioRepositoryPort } from '../../domain/ports/usuario.repository.port';
 import { UsuarioEntity } from '../../domain/entities/usuario.entity';
 import { TipoUsuario } from '../../domain/entities/tipo-usuario.entity';
+import { TipoDocumentoLegal } from '@domain/entities/documento-legal.entity';
 import { PasswordService } from '../services/password.service';
 
 export class UsuarioController {
   constructor(
     private readonly crearUsuarioUseCase: CrearUsuarioUseCase,
-    private readonly usuarioRepository: UsuarioRepositoryPort
+    private readonly usuarioRepository: UsuarioRepositoryPort,
+    private readonly aceptarTerminosUseCase?: AceptarTerminosUseCase
   ) {}
 
   async crearUsuario(req: Request, res: Response): Promise<void> {
@@ -68,6 +71,26 @@ export class UsuarioController {
       const result = await this.crearUsuarioUseCase.execute(nuevoUsuario);
 
       if (result.success) {
+        // Registrar aceptación de términos automáticamente
+        if (this.aceptarTerminosUseCase && result.data?.id) {
+          const ip_address = (req.headers['x-forwarded-for'] as string)?.split(',')[0]?.trim()
+            || req.socket.remoteAddress
+            || undefined;
+          const user_agent = req.headers['user-agent'] || undefined;
+
+          try {
+            await this.aceptarTerminosUseCase.execute({
+              usuario_id: result.data.id,
+              tipo_documento: TipoDocumentoLegal.TERMS,
+              ip_address,
+              user_agent
+            });
+          } catch (error) {
+            console.error('Error registrando aceptación de términos:', error);
+            // No fallar el registro si la aceptación de términos falla
+          }
+        }
+
         // No devolver la contraseña hasheada en la respuesta
         const { password_hash: _, ...usuarioSinPassword } = result.data!;
         res.status(201).json({

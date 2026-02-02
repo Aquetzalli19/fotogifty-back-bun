@@ -1,6 +1,9 @@
 import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
 import { UsuarioConTipo } from '../../domain/entities/tipo-usuario.entity';
+import { PrismaAceptacionTerminosRepository } from '../repositories/prisma-aceptacion-terminos.repository';
+import { PrismaDocumentoLegalRepository } from '../repositories/prisma-documento-legal.repository';
+import { TipoDocumentoLegal } from '@domain/entities/documento-legal.entity';
 
 declare global {
   namespace Express {
@@ -107,4 +110,53 @@ export const requireSuperAdmin = (req: Request, res: Response, next: NextFunctio
 // Middleware para verificar que el usuario sea un vendedor de ventanilla
 export const requireVendedor = (req: Request, res: Response, next: NextFunction) => {
   requireRole('store')(req, res, next);
+};
+
+// Middleware para verificar que el usuario haya aceptado los términos y condiciones
+export const requireTermsAcceptance = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    if (!req.user) {
+      return res.status(401).json({
+        success: false,
+        message: 'Acceso denegado. Autenticación requerida'
+      });
+    }
+
+    const aceptacionTerminosRepository = new PrismaAceptacionTerminosRepository();
+    const documentoLegalRepository = new PrismaDocumentoLegalRepository();
+
+    // Obtener documento activo de términos
+    const termsActivo = await documentoLegalRepository.findActivoByTipo(TipoDocumentoLegal.TERMS);
+
+    if (!termsActivo) {
+      // Si no hay términos activos, permitir continuar
+      return next();
+    }
+
+    // Verificar si el usuario ha aceptado la versión actual
+    const hasAccepted = await aceptacionTerminosRepository.hasAcceptedCurrentVersion(
+      req.user.id,
+      TipoDocumentoLegal.TERMS,
+      termsActivo.version
+    );
+
+    if (!hasAccepted) {
+      return res.status(403).json({
+        success: false,
+        message: 'Debe aceptar los términos y condiciones para continuar',
+        code: 'TERMS_NOT_ACCEPTED',
+        data: {
+          version_requerida: termsActivo.version
+        }
+      });
+    }
+
+    next();
+  } catch (error) {
+    console.error('Error en requireTermsAcceptance:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Error al verificar aceptación de términos'
+    });
+  }
 };

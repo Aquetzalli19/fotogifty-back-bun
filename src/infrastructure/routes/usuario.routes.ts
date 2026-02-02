@@ -1,7 +1,10 @@
 import { Router } from 'express';
 import { UsuarioController } from '../controllers/usuario.controller';
 import { CrearUsuarioUseCase } from '../../application/use-cases/crear-usuario.use-case';
+import { AceptarTerminosUseCase } from '@application/use-cases/aceptar-terminos.use-case';
 import { PrismaUsuarioRepository } from '../repositories/prisma-usuario.repository';
+import { PrismaAceptacionTerminosRepository } from '../repositories/prisma-aceptacion-terminos.repository';
+import { PrismaDocumentoLegalRepository } from '../repositories/prisma-documento-legal.repository';
 import { authenticateToken, requireRole, requireCliente, requireAdmin } from '../middlewares/auth.middleware';
 
 /**
@@ -12,8 +15,20 @@ import { authenticateToken, requireRole, requireCliente, requireAdmin } from '..
  */
 const usuarioRoutes = (router: Router): void => {
   const usuarioRepository = new PrismaUsuarioRepository();
+  const aceptacionTerminosRepository = new PrismaAceptacionTerminosRepository();
+  const documentoLegalRepository = new PrismaDocumentoLegalRepository();
+
   const crearUsuarioUseCase = new CrearUsuarioUseCase(usuarioRepository);
-  const usuarioController = new UsuarioController(crearUsuarioUseCase, usuarioRepository);
+  const aceptarTerminosUseCase = new AceptarTerminosUseCase(
+    aceptacionTerminosRepository,
+    documentoLegalRepository
+  );
+
+  const usuarioController = new UsuarioController(
+    crearUsuarioUseCase,
+    usuarioRepository,
+    aceptarTerminosUseCase
+  );
 
   /**
    * @swagger

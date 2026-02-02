@@ -7,6 +7,8 @@ import { PrismaUsuarioRepository } from '../repositories/prisma-usuario.reposito
 import { PrismaPaqueteRepository } from '../repositories/prisma-paquete.repository';
 import { PrismaDireccionRepository } from '../repositories/prisma-direccion.repository';
 import { PrismaPedidoRepository } from '../repositories/prisma-pedido.repository';
+import { PrismaAceptacionTerminosRepository } from '../repositories/prisma-aceptacion-terminos.repository';
+import { PrismaDocumentoLegalRepository } from '../repositories/prisma-documento-legal.repository';
 import { authenticateToken, requireCliente } from '../middlewares/auth.middleware';
 
 const checkoutRoutes = (router: Router): void => {
@@ -16,13 +18,17 @@ const checkoutRoutes = (router: Router): void => {
   const paqueteRepository = new PrismaPaqueteRepository();
   const direccionRepository = new PrismaDireccionRepository();
   const pedidoRepository = new PrismaPedidoRepository();
+  const aceptacionTerminosRepository = new PrismaAceptacionTerminosRepository();
+  const documentoLegalRepository = new PrismaDocumentoLegalRepository();
 
   // Inicializar casos de uso
   const crearSesionCheckoutUseCase = new CrearSesionCheckoutUseCase(
     stripeService,
     usuarioRepository,
     paqueteRepository,
-    direccionRepository
+    direccionRepository,
+    aceptacionTerminosRepository,
+    documentoLegalRepository
   );
   const verificarSesionCheckoutUseCase = new VerificarSesionCheckoutUseCase(
     stripeService,
