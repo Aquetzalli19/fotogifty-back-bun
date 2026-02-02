@@ -19,7 +19,9 @@ export class DocumentoLegalController {
 
   async crear(req: Request, res: Response): Promise<void> {
     try {
-      const { tipo, titulo, contenido, version } = req.body;
+      const { tipo, titulo, contenido, version, activo } = req.body;
+
+      console.log('📥 Campo activo recibido:', activo);
 
       // Validaciones básicas
       if (!tipo || !titulo || !contenido || !version) {
@@ -47,7 +49,7 @@ export class DocumentoLegalController {
         titulo,
         contenido,
         version,
-        false // Por defecto no está activo
+        activo === true // Usar el valor recibido del request
       );
 
       const result = await this.crearDocumentoLegalUseCase.execute(nuevoDocumento);

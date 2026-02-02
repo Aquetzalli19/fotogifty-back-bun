@@ -13,7 +13,27 @@ export class CrearDocumentoLegalUseCase {
 
   async execute(documento: DocumentoLegal): Promise<CrearDocumentoLegalResult> {
     try {
+      // Si el documento debe estar activo, desactivar todos los documentos del mismo tipo
+      if (documento.activo === true) {
+        console.log('🔄 Desactivando otros documentos del tipo:', documento.tipo);
+
+        // Obtener todos los documentos del mismo tipo
+        const documentosMismoTipo = await this.documentoLegalRepository.findByTipo(documento.tipo);
+
+        // Desactivar cada uno
+        for (const doc of documentosMismoTipo) {
+          if (doc.id && doc.activo) {
+            await this.documentoLegalRepository.update(doc.id, { activo: false });
+          }
+        }
+
+        console.log('✅ Documentos del mismo tipo desactivados');
+      }
+
+      // Crear el nuevo documento con el estado activo especificado
       const documentoGuardado = await this.documentoLegalRepository.save(documento);
+
+      console.log('✅ Documento legal creado con activo:', documentoGuardado.activo);
 
       return {
         success: true,
