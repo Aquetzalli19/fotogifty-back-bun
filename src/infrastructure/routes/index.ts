@@ -19,6 +19,7 @@ import documentoLegalRoutes from './documento-legal.routes';
 import aceptacionTerminosRoutes from './aceptacion-terminos.routes';
 import configuracionTiendaRoutes from './configuracion-tienda.routes';
 import landingContentRoutes from './landing-content.routes';
+import carritoTemporalRoutes from './carrito-temporal.routes';
 
 const configureRoutes = (): Router => {
   const router = Router();
@@ -47,6 +48,7 @@ const configureRoutes = (): Router => {
   aceptacionTerminosRoutes(apiRouter);
   configuracionTiendaRoutes(apiRouter);
   landingContentRoutes(apiRouter);
+  carritoTemporalRoutes(apiRouter);
   router.use('/api', apiRouter);
 
   return router;

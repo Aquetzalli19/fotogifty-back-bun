@@ -8,24 +8,27 @@ datasource db {
 }
 
 model usuarios {
-  id                    Int                      @id @default(autoincrement())
-  email                 String                   @unique @db.VarChar(255)
-  password_hash         String                   @db.VarChar(255)
-  nombre                String                   @db.VarChar(100)
-  apellido              String                   @db.VarChar(100)
-  telefono              String?                  @db.VarChar(20)
-  fecha_registro        DateTime                 @default(now())
-  activo                Boolean                  @default(true)
-  acepto_terminos       Boolean                  @default(false)
-  fecha_ultima_conexion DateTime?                @db.DateTime
-  token_recuperacion    String?                  @db.VarChar(255)
-  fecha_expiracion_token DateTime?               @db.DateTime
-  administrador         administradores?
-  aceptaciones_terminos aceptaciones_terminos[]
-  direcciones           direcciones[]
-  fotos                 fotos[]
-  pedidos               pedidos[]
-  stores                stores?
+  id                       Int                           @id @default(autoincrement())
+  email                    String                        @unique @db.VarChar(255)
+  password_hash            String                        @db.VarChar(255)
+  nombre                   String                        @db.VarChar(100)
+  apellido                 String                        @db.VarChar(100)
+  telefono                 String?                       @db.VarChar(20)
+  fecha_registro           DateTime                      @default(now())
+  activo                   Boolean                       @default(true)
+  acepto_terminos          Boolean                       @default(false)
+  fecha_ultima_conexion    DateTime?                     @db.DateTime
+  token_recuperacion       String?                       @db.VarChar(255)
+  fecha_expiracion_token   DateTime?                     @db.DateTime
+  administrador            administradores?
+  aceptaciones_terminos    aceptaciones_terminos[]
+  direcciones              direcciones[]
+  fotos                    fotos[]
+  pedidos                  pedidos[]
+  stores                   stores?
+  carrito_temporal         carritos_temporales?
+  customizaciones_temporales customizaciones_temporales[]
+  imagenes_temporales      imagenes_temporales[]
 }
 
 model direcciones {
@@ -317,4 +320,55 @@ model landing_options {
 
   @@index([section_key], map: "idx_landing_options_section")
   @@index([section_key, orden], map: "idx_landing_options_section_orden")
+}
+
+enum EditorType {
+  standard
+  calendar
+  polaroid
+}
+
+model carritos_temporales {
+  id          Int      @id @default(autoincrement())
+  usuario_id  Int      @unique
+  datos       Json
+  created_at  DateTime @default(now())
+  updated_at  DateTime @default(now()) @updatedAt
+  usuario     usuarios @relation(fields: [usuario_id], references: [id], onDelete: Cascade)
+
+  @@index([usuario_id], map: "idx_carritos_usuario")
+  @@index([updated_at], map: "idx_carritos_updated")
+}
+
+model customizaciones_temporales {
+  id             Int        @id @default(autoincrement())
+  usuario_id     Int
+  cart_item_id   String     @db.VarChar(100)
+  instance_index Int
+  editor_type    EditorType
+  datos          Json
+  completed      Boolean    @default(false)
+  created_at     DateTime   @default(now())
+  updated_at     DateTime   @default(now()) @updatedAt
+  usuario        usuarios   @relation(fields: [usuario_id], references: [id], onDelete: Cascade)
+
+  @@unique([usuario_id, cart_item_id, instance_index], map: "unique_customization")
+  @@index([usuario_id], map: "idx_customizaciones_usuario")
+  @@index([updated_at], map: "idx_customizaciones_updated")
+}
+
+model imagenes_temporales {
+  id                Int      @id @default(autoincrement())
+  usuario_id        Int
+  s3_key            String   @db.VarChar(500)
+  s3_url            String?  @db.VarChar(1000)
+  original_filename String   @db.VarChar(255)
+  mime_type         String   @db.VarChar(100)
+  size_bytes        Int
+  created_at        DateTime @default(now())
+  expires_at        DateTime
+  usuario           usuarios @relation(fields: [usuario_id], references: [id], onDelete: Cascade)
+
+  @@index([usuario_id], map: "idx_imagenes_usuario")
+  @@index([expires_at], map: "idx_imagenes_expires")
 }
