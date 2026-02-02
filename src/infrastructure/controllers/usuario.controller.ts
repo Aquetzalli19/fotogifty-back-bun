@@ -1,6 +1,8 @@
 import { Request, Response } from 'express';
 import { CrearUsuarioUseCase } from '../../application/use-cases/crear-usuario.use-case';
 import { AceptarTerminosUseCase } from '@application/use-cases/aceptar-terminos.use-case';
+import { VerificarPasswordUsuarioUseCase } from '@application/use-cases/verificar-password-usuario.use-case';
+import { ActualizarEmailUsuarioUseCase } from '@application/use-cases/actualizar-email-usuario.use-case';
 import { UsuarioRepositoryPort } from '../../domain/ports/usuario.repository.port';
 import { UsuarioEntity } from '../../domain/entities/usuario.entity';
 import { TipoUsuario } from '../../domain/entities/tipo-usuario.entity';
@@ -11,7 +13,9 @@ export class UsuarioController {
   constructor(
     private readonly crearUsuarioUseCase: CrearUsuarioUseCase,
     private readonly usuarioRepository: UsuarioRepositoryPort,
-    private readonly aceptarTerminosUseCase?: AceptarTerminosUseCase
+    private readonly aceptarTerminosUseCase?: AceptarTerminosUseCase,
+    private readonly verificarPasswordUseCase?: VerificarPasswordUsuarioUseCase,
+    private readonly actualizarEmailUseCase?: ActualizarEmailUsuarioUseCase
   ) {}
 
   async crearUsuario(req: Request, res: Response): Promise<void> {
@@ -523,6 +527,144 @@ export class UsuarioController {
       });
     } catch (error: any) {
       console.error('Error obteniendo usuarios:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Error interno del servidor'
+      });
+    }
+  }
+
+  async verifyPassword(req: Request, res: Response): Promise<void> {
+    try {
+      if (!this.verificarPasswordUseCase) {
+        res.status(500).json({
+          success: false,
+          message: 'Servicio no disponible'
+        });
+        return;
+      }
+
+      const { id } = req.params;
+      const usuarioId = parseInt(id);
+      const tokenUserId = req.user?.id;
+      const { password } = req.body;
+
+      if (isNaN(usuarioId)) {
+        res.status(400).json({
+          success: false,
+          message: 'ID de usuario inválido'
+        });
+        return;
+      }
+
+      // Verificar que el usuario autenticado solo pueda verificar su propia contraseña
+      // a menos que sea administrador
+      const esAdmin = req.user?.tipo === 'admin' || req.user?.tipo === 'super_admin';
+      if (tokenUserId !== usuarioId && !esAdmin) {
+        res.status(403).json({
+          success: false,
+          message: 'Acceso denegado. Solo puedes verificar tu propia contraseña.'
+        });
+        return;
+      }
+
+      if (!password) {
+        res.status(400).json({
+          success: false,
+          message: 'Contraseña es requerida'
+        });
+        return;
+      }
+
+      const result = await this.verificarPasswordUseCase.execute(usuarioId, password);
+
+      if (!result.success) {
+        res.status(404).json({
+          success: false,
+          message: result.message || 'Error al verificar la contraseña'
+        });
+        return;
+      }
+
+      res.status(200).json({
+        success: true,
+        valid: result.valid
+      });
+    } catch (error: any) {
+      console.error('Error verificando contraseña:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Error interno del servidor'
+      });
+    }
+  }
+
+  async updateEmail(req: Request, res: Response): Promise<void> {
+    try {
+      if (!this.actualizarEmailUseCase) {
+        res.status(500).json({
+          success: false,
+          message: 'Servicio no disponible'
+        });
+        return;
+      }
+
+      const { id } = req.params;
+      const usuarioId = parseInt(id);
+      const tokenUserId = req.user?.id;
+      const { email, currentPassword } = req.body;
+
+      if (isNaN(usuarioId)) {
+        res.status(400).json({
+          success: false,
+          message: 'ID de usuario inválido'
+        });
+        return;
+      }
+
+      // Verificar que el usuario autenticado solo pueda actualizar su propio email
+      // a menos que sea administrador
+      const esAdmin = req.user?.tipo === 'admin' || req.user?.tipo === 'super_admin';
+      if (tokenUserId !== usuarioId && !esAdmin) {
+        res.status(403).json({
+          success: false,
+          message: 'Acceso denegado. Solo puedes actualizar tu propio email.'
+        });
+        return;
+      }
+
+      if (!email || !currentPassword) {
+        res.status(400).json({
+          success: false,
+          message: 'Email y contraseña actual son requeridos'
+        });
+        return;
+      }
+
+      const result = await this.actualizarEmailUseCase.execute(usuarioId, email, currentPassword);
+
+      if (!result.success) {
+        const statusCode = result.error === 'INVALID_PASSWORD' ? 401 :
+                          result.error === 'EMAIL_IN_USE' ? 409 :
+                          result.error === 'USER_NOT_FOUND' ? 404 : 400;
+
+        res.status(statusCode).json({
+          success: false,
+          message: result.message || 'Error al actualizar el email'
+        });
+        return;
+      }
+
+      // No devolver la contraseña hasheada en la respuesta
+      const { password_hash: _, ...usuarioSinPassword } = result.data!;
+
+      res.status(200).json({
+        success: true,
+        data: usuarioSinPassword,
+        message: result.message || 'Email actualizado exitosamente'
+      });
+    } catch (error: any) {
+      console.error('Error actualizando email:', error);
       res.status(500).json({
         success: false,
         message: 'Error interno del servidor'

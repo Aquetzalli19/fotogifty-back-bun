@@ -2,6 +2,8 @@ import { Router } from 'express';
 import { UsuarioController } from '../controllers/usuario.controller';
 import { CrearUsuarioUseCase } from '../../application/use-cases/crear-usuario.use-case';
 import { AceptarTerminosUseCase } from '@application/use-cases/aceptar-terminos.use-case';
+import { VerificarPasswordUsuarioUseCase } from '@application/use-cases/verificar-password-usuario.use-case';
+import { ActualizarEmailUsuarioUseCase } from '@application/use-cases/actualizar-email-usuario.use-case';
 import { PrismaUsuarioRepository } from '../repositories/prisma-usuario.repository';
 import { PrismaAceptacionTerminosRepository } from '../repositories/prisma-aceptacion-terminos.repository';
 import { PrismaDocumentoLegalRepository } from '../repositories/prisma-documento-legal.repository';
@@ -23,11 +25,15 @@ const usuarioRoutes = (router: Router): void => {
     aceptacionTerminosRepository,
     documentoLegalRepository
   );
+  const verificarPasswordUseCase = new VerificarPasswordUsuarioUseCase(usuarioRepository);
+  const actualizarEmailUseCase = new ActualizarEmailUsuarioUseCase(usuarioRepository);
 
   const usuarioController = new UsuarioController(
     crearUsuarioUseCase,
     usuarioRepository,
-    aceptarTerminosUseCase
+    aceptarTerminosUseCase,
+    verificarPasswordUseCase,
+    actualizarEmailUseCase
   );
 
   /**
@@ -380,6 +386,131 @@ const usuarioRoutes = (router: Router): void => {
    */
   router.put('/usuarios/:id/password', authenticateToken, (req, res) =>
     usuarioController.changePassword(req, res)
+  );
+
+  /**
+   * @swagger
+   * /api/usuarios/{id}/verify-password:
+   *   post:
+   *     summary: Verificar si la contraseña es correcta
+   *     tags: [Usuarios]
+   *     parameters:
+   *       - in: path
+   *         name: id
+   *         required: true
+   *         schema:
+   *           type: integer
+   *         description: ID del usuario
+   *     requestBody:
+   *       required: true
+   *       content:
+   *         application/json:
+   *           schema:
+   *             type: object
+   *             required:
+   *               - password
+   *             properties:
+   *               password:
+   *                 type: string
+   *                 format: password
+   *                 description: Contraseña a verificar
+   *                 example: "password123"
+   *     security:
+   *       - bearerAuth: []
+   *     responses:
+   *       200:
+   *         description: Verificación exitosa
+   *         content:
+   *           application/json:
+   *             schema:
+   *               type: object
+   *               properties:
+   *                 success:
+   *                   type: boolean
+   *                   example: true
+   *                 valid:
+   *                   type: boolean
+   *                   description: Indica si la contraseña es válida
+   *                   example: true
+   *       400:
+   *         description: Datos de entrada inválidos
+   *       401:
+   *         description: Acceso no autorizado
+   *       403:
+   *         description: Acceso denegado
+   *       404:
+   *         description: Usuario no encontrado
+   *       500:
+   *         description: Error interno del servidor
+   */
+  router.post('/usuarios/:id/verify-password', authenticateToken, (req, res) =>
+    usuarioController.verifyPassword(req, res)
+  );
+
+  /**
+   * @swagger
+   * /api/usuarios/{id}/email:
+   *   put:
+   *     summary: Actualizar email del usuario con verificación de contraseña
+   *     tags: [Usuarios]
+   *     parameters:
+   *       - in: path
+   *         name: id
+   *         required: true
+   *         schema:
+   *           type: integer
+   *         description: ID del usuario
+   *     requestBody:
+   *       required: true
+   *       content:
+   *         application/json:
+   *           schema:
+   *             type: object
+   *             required:
+   *               - email
+   *               - currentPassword
+   *             properties:
+   *               email:
+   *                 type: string
+   *                 format: email
+   *                 description: Nuevo email
+   *                 example: "nuevoemail@ejemplo.com"
+   *               currentPassword:
+   *                 type: string
+   *                 format: password
+   *                 description: Contraseña actual para verificación
+   *                 example: "password123"
+   *     security:
+   *       - bearerAuth: []
+   *     responses:
+   *       200:
+   *         description: Email actualizado exitosamente
+   *         content:
+   *           application/json:
+   *             schema:
+   *               type: object
+   *               properties:
+   *                 success:
+   *                   type: boolean
+   *                 data:
+   *                   $ref: '#/components/schemas/UsuarioResponse'
+   *                 message:
+   *                   type: string
+   *       400:
+   *         description: Datos de entrada inválidos
+   *       401:
+   *         description: Contraseña incorrecta
+   *       403:
+   *         description: Acceso denegado
+   *       404:
+   *         description: Usuario no encontrado
+   *       409:
+   *         description: El email ya está en uso
+   *       500:
+   *         description: Error interno del servidor
+   */
+  router.put('/usuarios/:id/email', authenticateToken, (req, res) =>
+    usuarioController.updateEmail(req, res)
   );
 
   /**
