@@ -18,6 +18,7 @@ import analyticsRoutes from './analytics.routes';
 import documentoLegalRoutes from './documento-legal.routes';
 import aceptacionTerminosRoutes from './aceptacion-terminos.routes';
 import configuracionTiendaRoutes from './configuracion-tienda.routes';
+import landingContentRoutes from './landing-content.routes';
 
 const configureRoutes = (): Router => {
   const router = Router();
@@ -45,6 +46,7 @@ const configureRoutes = (): Router => {
   documentoLegalRoutes(apiRouter);
   aceptacionTerminosRoutes(apiRouter);
   configuracionTiendaRoutes(apiRouter);
+  landingContentRoutes(apiRouter);
   router.use('/api', apiRouter);
 
   return router;

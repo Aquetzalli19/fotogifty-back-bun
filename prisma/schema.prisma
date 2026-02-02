@@ -258,3 +258,63 @@ model configuracion_tienda {
   fecha_actualizacion     DateTime  @default(now()) @updatedAt
   actualizado_por         Int?
 }
+
+model landing_sections {
+  id                       Int               @id @default(autoincrement())
+  section_key              String            @unique @db.VarChar(50)
+  titulo                   String?           @db.VarChar(255)
+  subtitulo                String?           @db.Text
+  descripcion              String?           @db.Text
+  texto_primario           String?           @db.Text
+  texto_secundario         String?           @db.Text
+  color_primario           String?           @db.VarChar(9)
+  color_secundario         String?           @db.VarChar(9)
+  color_gradiente_inicio   String?           @db.VarChar(9)
+  color_gradiente_medio    String?           @db.VarChar(9)
+  color_gradiente_fin      String?           @db.VarChar(9)
+  imagen_principal_url     String?           @db.VarChar(500)
+  imagen_fondo_url         String?           @db.VarChar(500)
+  boton_texto              String?           @db.VarChar(100)
+  boton_color              String?           @db.VarChar(9)
+  boton_enlace             String?           @db.VarChar(255)
+  configuracion_extra      Json?
+  orden                    Int               @default(0)
+  activo                   Boolean           @default(true)
+  created_at               DateTime          @default(now())
+  updated_at               DateTime          @default(now()) @updatedAt
+  slides                   landing_slides[]
+  options                  landing_options[]
+
+  @@index([orden], map: "idx_landing_sections_orden")
+}
+
+model landing_slides {
+  id          Int               @id @default(autoincrement())
+  section_key String            @db.VarChar(50)
+  tipo        String            @db.VarChar(30)
+  titulo      String?           @db.VarChar(255)
+  descripcion String?           @db.Text
+  imagen_url  String            @db.VarChar(500)
+  orden       Int               @default(0)
+  activo      Boolean           @default(true)
+  created_at  DateTime          @default(now())
+  updated_at  DateTime          @default(now()) @updatedAt
+  section     landing_sections  @relation(fields: [section_key], references: [section_key], onDelete: Cascade)
+
+  @@index([section_key], map: "idx_landing_slides_section")
+  @@index([section_key, orden], map: "idx_landing_slides_section_orden")
+}
+
+model landing_options {
+  id          Int               @id @default(autoincrement())
+  section_key String            @db.VarChar(50)
+  texto       String            @db.VarChar(255)
+  orden       Int               @default(0)
+  activo      Boolean           @default(true)
+  created_at  DateTime          @default(now())
+  updated_at  DateTime          @default(now()) @updatedAt
+  section     landing_sections  @relation(fields: [section_key], references: [section_key], onDelete: Cascade)
+
+  @@index([section_key], map: "idx_landing_options_section")
+  @@index([section_key, orden], map: "idx_landing_options_section_orden")
+}
