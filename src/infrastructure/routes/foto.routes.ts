@@ -2,6 +2,7 @@ import { Router } from 'express';
 import multer from 'multer';
 import { FotoController } from '../controllers/foto.controller';
 import { SubirFotoUseCase } from '../../application/use-cases/subir-foto.use-case';
+import { ValidarLimiteCopiasUseCase } from '../../application/use-cases/validar-limite-copias.use-case';
 import { S3Service } from '../services/s3.service';
 import { PrismaUsuarioRepository } from '../repositories/prisma-usuario.repository';
 import { PrismaFotoRepository } from '../repositories/prisma-foto.repository';
@@ -74,7 +75,8 @@ const fotoRoutes = (router: Router): void => {
   const pedidoRepository = new PrismaPedidoRepository();
   const paqueteRepository = new PrismaPaqueteRepository();
   const subirFotoUseCase = new SubirFotoUseCase(s3Service, usuarioRepository, pedidoRepository, itemsPedidoRepository, paqueteRepository, fotoRepository);
-  const fotoController = new FotoController(subirFotoUseCase, fotoRepository, s3Service);
+  const validarLimiteCopiasUseCase = new ValidarLimiteCopiasUseCase(fotoRepository, itemsPedidoRepository);
+  const fotoController = new FotoController(subirFotoUseCase, validarLimiteCopiasUseCase, fotoRepository, s3Service);
 
   // Endpoint temporal para depuración - con middleware de Multer
   router.post('/fotos/debug', upload.any(), handleMulterError, (req, res) => {
@@ -158,20 +160,25 @@ const fotoRoutes = (router: Router): void => {
    *       - in: formData
    *         name: pedidoId
    *         type: integer
-   *         required: true
-   *         description: ID del pedido
+   *         required: false
+   *         description: ID del pedido (opcional)
    *       - in: formData
    *         name: itemPedidoId
    *         type: integer
    *         required: true
    *         description: ID del item del pedido
+   *       - in: formData
+   *         name: cantidad_copias
+   *         type: integer
+   *         required: false
+   *         description: Cantidad de copias físicas a imprimir (default 1, mínimo 1)
    *     security:
    *       - bearerAuth: []
    *     responses:
    *       200:
    *         description: Foto subida y guardada exitosamente
    *       400:
-   *         description: Error en los datos enviados
+   *         description: Error en los datos enviados o excede límite del paquete
    *       401:
    *         description: Acceso no autorizado
    *       500:
@@ -279,6 +286,66 @@ const fotoRoutes = (router: Router): void => {
    */
   router.post('/fotos/download-by-url', authenticateToken, requireRole('admin', 'super_admin', 'store'), (req, res) =>
     fotoController.downloadByUrl(req, res)
+  );
+
+  /**
+   * @swagger
+   * /api/fotos/{id}/copias:
+   *   patch:
+   *     summary: Actualizar la cantidad de copias de una foto
+   *     description: Permite actualizar la cantidad de copias físicas de una foto existente, validando que no exceda el límite del paquete
+   *     tags: [Fotos]
+   *     parameters:
+   *       - in: path
+   *         name: id
+   *         required: true
+   *         schema:
+   *           type: integer
+   *         description: ID de la foto
+   *     requestBody:
+   *       required: true
+   *       content:
+   *         application/json:
+   *           schema:
+   *             type: object
+   *             required:
+   *               - cantidad_copias
+   *             properties:
+   *               cantidad_copias:
+   *                 type: integer
+   *                 minimum: 1
+   *                 description: Nueva cantidad de copias físicas a imprimir
+   *                 example: 5
+   *     security:
+   *       - bearerAuth: []
+   *     responses:
+   *       200:
+   *         description: Cantidad de copias actualizada exitosamente
+   *         content:
+   *           application/json:
+   *             schema:
+   *               type: object
+   *               properties:
+   *                 success:
+   *                   type: boolean
+   *                 data:
+   *                   type: object
+   *                   properties:
+   *                     id:
+   *                       type: integer
+   *                     cantidad_copias:
+   *                       type: integer
+   *                     item_pedido_id:
+   *                       type: integer
+   *                 message:
+   *                   type: string
+   *       400:
+   *         description: Error en validación o excede límite del paquete
+   *       404:
+   *         description: Foto no encontrada
+   */
+  router.patch('/fotos/:id/copias', authenticateToken, (req, res) =>
+    fotoController.actualizarCantidadCopias(req, res)
   );
 };
 

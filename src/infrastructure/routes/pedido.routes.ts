@@ -81,7 +81,7 @@ const pedidoRoutes = (router: Router): void => {
   const crearPedidoUseCase = new CrearPedidoUseCase(pedidoRepository, usuarioRepository, paqueteRepository);
   const actualizarEstadoPedidoUseCase = new ActualizarEstadoPedidoUseCase(pedidoRepository);
   const subirFotoUseCase = new SubirFotoUseCase(s3Service, usuarioRepository, pedidoRepository, itemsPedidoRepository, paqueteRepository, fotoRepository);
-  const pedidoController = new PedidoController(crearPedidoUseCase, actualizarEstadoPedidoUseCase, pedidoRepository, usuarioRepository, paqueteRepository);
+  const pedidoController = new PedidoController(crearPedidoUseCase, actualizarEstadoPedidoUseCase, pedidoRepository, usuarioRepository, paqueteRepository, fotoRepository, itemsPedidoRepository);
 
   /**
    * @swagger
@@ -413,6 +413,71 @@ const pedidoRoutes = (router: Router): void => {
    */
   router.patch('/pedidos/:id/estado', authenticateToken, requireRole('admin', 'super_admin', 'store'), (req, res) =>
     pedidoController.updateEstadoPedido(req, res)
+  );
+
+  /**
+   * @swagger
+   * /api/items-pedido/{itemPedidoId}/resumen-copias:
+   *   get:
+   *     summary: Obtener resumen de copias de un item de pedido
+   *     description: Retorna el límite del paquete, copias usadas, copias disponibles y lista de fotos con sus cantidades
+   *     tags: [Pedidos]
+   *     parameters:
+   *       - in: path
+   *         name: itemPedidoId
+   *         required: true
+   *         schema:
+   *           type: integer
+   *         description: ID del item de pedido
+   *     security:
+   *       - bearerAuth: []
+   *     responses:
+   *       200:
+   *         description: Resumen de copias obtenido exitosamente
+   *         content:
+   *           application/json:
+   *             schema:
+   *               type: object
+   *               properties:
+   *                 success:
+   *                   type: boolean
+   *                 data:
+   *                   type: object
+   *                   properties:
+   *                     item_pedido_id:
+   *                       type: integer
+   *                     limite_paquete:
+   *                       type: integer
+   *                       description: Cantidad total de copias permitidas por el paquete
+   *                     copias_usadas:
+   *                       type: integer
+   *                       description: Cantidad de copias ya utilizadas
+   *                     copias_disponibles:
+   *                       type: integer
+   *                       description: Cantidad de copias aún disponibles
+   *                     fotos:
+   *                       type: array
+   *                       items:
+   *                         type: object
+   *                         properties:
+   *                           id:
+   *                             type: integer
+   *                           nombre_archivo:
+   *                             type: string
+   *                           cantidad_copias:
+   *                             type: integer
+   *                           fecha_subida:
+   *                             type: string
+   *                             format: date-time
+   *       400:
+   *         description: ID de item de pedido inválido
+   *       404:
+   *         description: Item de pedido no encontrado
+   *       401:
+   *         description: Acceso no autorizado
+   */
+  router.get('/items-pedido/:itemPedidoId/resumen-copias', authenticateToken, (req, res) =>
+    pedidoController.obtenerResumenCopias(req, res)
   );
 
   /**

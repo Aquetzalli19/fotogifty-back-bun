@@ -12,6 +12,7 @@ export class PrismaFotoRepository implements FotoRepositoryPort {
         nombre_archivo: foto.nombre_archivo,
         ruta_almacenamiento: foto.ruta_almacenamiento,
         tamaño_archivo: foto.tamaño_archivo,
+        cantidad_copias: foto.cantidad_copias || 1,
         ancho_foto: foto.ancho_foto,
         alto_foto: foto.alto_foto,
         resolucion_foto: foto.resolucion_foto,
@@ -38,6 +39,35 @@ export class PrismaFotoRepository implements FotoRepositoryPort {
     return fotos.map(foto => this.toDomain(foto));
   }
 
+  async getTotalCopiasUsadas(itemPedidoId: number): Promise<number> {
+    const result = await prisma.fotos.aggregate({
+      where: { item_pedido_id: itemPedidoId },
+      _sum: {
+        cantidad_copias: true
+      }
+    });
+
+    return result._sum.cantidad_copias || 0;
+  }
+
+  async updateCantidadCopias(id: number, cantidadCopias: number): Promise<Foto | null> {
+    const updated = await prisma.fotos.update({
+      where: { id },
+      data: { cantidad_copias: cantidadCopias }
+    });
+
+    return this.toDomain(updated);
+  }
+
+  async findByItemPedidoId(itemPedidoId: number): Promise<Foto[]> {
+    const fotos = await prisma.fotos.findMany({
+      where: { item_pedido_id: itemPedidoId },
+      orderBy: { id: 'asc' }
+    });
+
+    return fotos.map(foto => this.toDomain(foto));
+  }
+
   private toDomain(prismaFoto: any): Foto {
     return {
       id: prismaFoto.id,
@@ -47,6 +77,7 @@ export class PrismaFotoRepository implements FotoRepositoryPort {
       nombre_archivo: prismaFoto.nombre_archivo,
       ruta_almacenamiento: prismaFoto.ruta_almacenamiento,
       tamaño_archivo: prismaFoto.tamaño_archivo,
+      cantidad_copias: prismaFoto.cantidad_copias || 1,
       ancho_foto: prismaFoto.ancho_foto ? Number(prismaFoto.ancho_foto) : undefined,
       alto_foto: prismaFoto.alto_foto ? Number(prismaFoto.alto_foto) : undefined,
       resolucion_foto: prismaFoto.resolucion_foto || undefined,

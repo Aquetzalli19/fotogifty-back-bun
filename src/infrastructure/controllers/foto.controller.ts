@@ -1,13 +1,16 @@
 import { Request, Response } from 'express';
 import { SubirFotoUseCase } from '../../application/use-cases/subir-foto.use-case';
+import { ValidarLimiteCopiasUseCase } from '../../application/use-cases/validar-limite-copias.use-case';
 import { PedidoRepositoryPort } from '../../domain/ports/pedido.repository.port';
 import { UsuarioRepositoryPort } from '../../domain/ports/usuario.repository.port';
 import { FotoRepositoryPort } from '../../domain/ports/foto.repository.port';
+import { ItemsPedidoRepositoryPort } from '../../domain/ports/items-pedido.repository.port';
 import { S3Service } from '../services/s3.service';
 
 export class FotoController {
   constructor(
     private readonly subirFotoUseCase: SubirFotoUseCase,
+    private readonly validarLimiteCopiasUseCase: ValidarLimiteCopiasUseCase,
     private readonly fotoRepository: FotoRepositoryPort,
     private readonly s3Service: S3Service
   ) {}
@@ -37,7 +40,7 @@ export class FotoController {
         return;
       }
 
-      const { usuarioId, pedidoId, itemPedidoId } = req.body;
+      const { usuarioId, pedidoId, itemPedidoId, cantidad_copias } = req.body;
 
       if (!usuarioId || !itemPedidoId) {
         res.status(400).json({
@@ -47,17 +50,41 @@ export class FotoController {
         return;
       }
 
-      // Validar que itemPedidoId exista
-      if (!pedidoId) {
-        // Si no se proporciona pedidoId, solo verificar que itemPedidoId exista
-        // Aquí podrías verificar que itemPedidoId existe en la base de datos si es necesario
+      // Parsear y validar cantidad_copias
+      const cantidadCopias = cantidad_copias ? parseInt(cantidad_copias) : 1;
+      if (cantidadCopias < 1) {
+        res.status(400).json({
+          success: false,
+          error: 'cantidad_copias debe ser al menos 1'
+        });
+        return;
+      }
+
+      // Validar que no exceda el límite del paquete
+      const validacion = await this.validarLimiteCopiasUseCase.execute(
+        parseInt(itemPedidoId),
+        cantidadCopias
+      );
+
+      if (!validacion.success) {
+        res.status(400).json({
+          success: false,
+          error: validacion.message,
+          data: {
+            copias_usadas_total: validacion.copias_usadas_total,
+            copias_disponibles: validacion.copias_disponibles,
+            limite_paquete: validacion.limite_paquete
+          }
+        });
+        return;
       }
 
       const foto = await this.subirFotoUseCase.execute({
         file: req.file,
         usuarioId: parseInt(usuarioId),
         pedidoId: pedidoId ? parseInt(pedidoId) : undefined, // Convertir a número o dejar como undefined
-        itemPedidoId: parseInt(itemPedidoId)
+        itemPedidoId: parseInt(itemPedidoId),
+        cantidadCopias: cantidadCopias
       });
 
       res.status(200).json({
@@ -67,6 +94,7 @@ export class FotoController {
           url: foto.ruta_almacenamiento,
           filename: foto.nombre_archivo,
           size: foto.tamaño_archivo,
+          cantidad_copias: foto.cantidad_copias,
           fecha_subida: foto.fecha_subida
         }
       });
@@ -213,6 +241,78 @@ export class FotoController {
       res.status(500).json({
         success: false,
         error: 'Error al descargar imagen desde S3'
+      });
+    }
+  }
+
+  async actualizarCantidadCopias(req: Request, res: Response): Promise<void> {
+    try {
+      const fotoId = parseInt(req.params.id);
+      const { cantidad_copias } = req.body;
+
+      if (isNaN(fotoId)) {
+        res.status(400).json({
+          success: false,
+          error: 'ID de foto inválido'
+        });
+        return;
+      }
+
+      if (!cantidad_copias || cantidad_copias < 1) {
+        res.status(400).json({
+          success: false,
+          error: 'cantidad_copias debe ser al menos 1'
+        });
+        return;
+      }
+
+      // Verificar que la foto existe
+      const fotoExistente = await this.fotoRepository.findById(fotoId);
+      if (!fotoExistente) {
+        res.status(404).json({
+          success: false,
+          error: 'Foto no encontrada'
+        });
+        return;
+      }
+
+      // Validar que no exceda el límite del paquete
+      const validacion = await this.validarLimiteCopiasUseCase.execute(
+        fotoExistente.item_pedido_id,
+        cantidad_copias,
+        fotoId  // Pasamos el fotoId para excluir sus copias actuales
+      );
+
+      if (!validacion.success) {
+        res.status(400).json({
+          success: false,
+          error: validacion.message,
+          data: {
+            copias_usadas_total: validacion.copias_usadas_total,
+            copias_disponibles: validacion.copias_disponibles,
+            limite_paquete: validacion.limite_paquete
+          }
+        });
+        return;
+      }
+
+      // Actualizar cantidad de copias
+      const fotoActualizada = await this.fotoRepository.updateCantidadCopias(fotoId, cantidad_copias);
+
+      res.status(200).json({
+        success: true,
+        data: {
+          id: fotoActualizada?.id,
+          cantidad_copias: fotoActualizada?.cantidad_copias,
+          item_pedido_id: fotoActualizada?.item_pedido_id
+        },
+        message: 'Cantidad de copias actualizada exitosamente'
+      });
+    } catch (error: any) {
+      console.error('Error updating cantidad_copias:', error);
+      res.status(500).json({
+        success: false,
+        error: error.message || 'Error interno del servidor'
       });
     }
   }

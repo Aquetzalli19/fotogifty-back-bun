@@ -5,6 +5,8 @@ import { ActualizarEstadoPedidoUseCase } from '../../application/use-cases/actua
 import { PedidoRepositoryPort } from '../../domain/ports/pedido.repository.port';
 import { UsuarioRepositoryPort } from '../../domain/ports/usuario.repository.port';
 import { PaqueteRepositoryPort } from '../../domain/ports/paquete.repository.port';
+import { FotoRepositoryPort } from '../../domain/ports/foto.repository.port';
+import { ItemsPedidoRepositoryPort } from '../../domain/ports/items-pedido.repository.port';
 
 export class PedidoController {
   constructor(
@@ -12,7 +14,9 @@ export class PedidoController {
     private actualizarEstadoPedidoUseCase: ActualizarEstadoPedidoUseCase,
     private pedidoRepository: PedidoRepositoryPort,
     private usuarioRepository: UsuarioRepositoryPort,
-    private paqueteRepository: PaqueteRepositoryPort
+    private paqueteRepository: PaqueteRepositoryPort,
+    private fotoRepository: FotoRepositoryPort,
+    private itemsPedidoRepository: ItemsPedidoRepositoryPort
   ) {}
 
   async crearPedido(req: Request, res: Response): Promise<void> {
@@ -247,6 +251,65 @@ export class PedidoController {
       });
     } catch (error) {
       console.error('Error en getAllPedidos:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Error interno del servidor'
+      });
+    }
+  }
+
+  async obtenerResumenCopias(req: Request, res: Response): Promise<void> {
+    try {
+      const { itemPedidoId } = req.params;
+
+      const itemPedidoIdNum = parseInt(itemPedidoId, 10);
+      if (isNaN(itemPedidoIdNum)) {
+        res.status(400).json({
+          success: false,
+          message: 'ID de item de pedido inválido'
+        });
+        return;
+      }
+
+      // Verificar que el item de pedido exista
+      const itemPedido = await this.itemsPedidoRepository.findById(itemPedidoIdNum);
+      if (!itemPedido) {
+        res.status(404).json({
+          success: false,
+          message: 'Item de pedido no encontrado'
+        });
+        return;
+      }
+
+      // Obtener el límite del paquete
+      const limitePaquete = itemPedido.cantidad_fotos || itemPedido.num_fotos_requeridas || 0;
+
+      // Obtener todas las fotos del item de pedido
+      const fotos = await this.fotoRepository.findByItemPedidoId(itemPedidoIdNum);
+
+      // Calcular total de copias usadas
+      const totalCopiasUsadas = await this.fotoRepository.getTotalCopiasUsadas(itemPedidoIdNum);
+
+      // Calcular copias disponibles
+      const copiasDisponibles = limitePaquete - totalCopiasUsadas;
+
+      res.status(200).json({
+        success: true,
+        data: {
+          item_pedido_id: itemPedidoIdNum,
+          limite_paquete: limitePaquete,
+          copias_usadas: totalCopiasUsadas,
+          copias_disponibles: copiasDisponibles,
+          fotos: fotos.map(foto => ({
+            id: foto.id,
+            nombre_archivo: foto.nombre_archivo,
+            cantidad_copias: foto.cantidad_copias,
+            fecha_subida: foto.fecha_subida
+          }))
+        }
+      });
+    } catch (error) {
+      console.error('Error en obtenerResumenCopias:', error);
       res.status(500).json({
         success: false,
         message: 'Error interno del servidor'

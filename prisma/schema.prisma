@@ -158,6 +158,7 @@ model fotos {
   ancho_foto          Decimal?           @db.Decimal(5, 2)  // Ancho heredado del paquete
   alto_foto           Decimal?           @db.Decimal(5, 2)   // Alto heredado del paquete
   resolucion_foto     Int?               // Resolución heredada del paquete
+  cantidad_copias     Int                @default(1)        // Cantidad de copias físicas a imprimir
   fecha_subida        DateTime           @default(now())
   procesada           Boolean            @default(false)
   calendarios         calendario_fotos[]
@@ -168,6 +169,7 @@ model fotos {
   @@index([item_pedido_id], map: "fotos_item_pedido_id_fkey")
   @@index([pedido_id], map: "fotos_pedido_id_fkey")
   @@index([usuario_id], map: "fotos_usuario_id_fkey")
+  @@index([item_pedido_id, cantidad_copias], map: "fotos_item_copias_idx")
 }
 
 model calendario_fotos {

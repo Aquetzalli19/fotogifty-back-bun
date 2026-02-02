@@ -6,6 +6,7 @@ export interface Foto {
   nombre_archivo: string;
   ruta_almacenamiento: string;
   tamaño_archivo: number;
+  cantidad_copias?: number;  // Cantidad de copias físicas a imprimir
   fecha_subida?: Date;
   procesada?: boolean;
   ancho_foto?: number;  // Ancho heredado del paquete
@@ -21,6 +22,7 @@ export class FotoEntity implements Foto {
   public nombre_archivo: string;
   public ruta_almacenamiento: string;
   public tamaño_archivo: number;
+  public cantidad_copias: number;  // Cantidad de copias físicas a imprimir
   public fecha_subida: Date;
   public procesada: boolean;
   public ancho_foto?: number;  // Ancho heredado del paquete
@@ -33,6 +35,7 @@ export class FotoEntity implements Foto {
     nombre_archivo: string,
     ruta_almacenamiento: string,
     tamaño_archivo: number,
+    cantidad_copias: number = 1,  // Default 1 copia
     pedido_id?: number,  // Parámetro opcional
     ancho_foto?: number,
     alto_foto?: number,
@@ -46,6 +49,7 @@ export class FotoEntity implements Foto {
     this.nombre_archivo = nombre_archivo;
     this.ruta_almacenamiento = ruta_almacenamiento;
     this.tamaño_archivo = tamaño_archivo;
+    this.cantidad_copias = cantidad_copias >= 1 ? cantidad_copias : 1;  // Mínimo 1 copia
     this.fecha_subida = new Date();
     this.procesada = false;
     this.ancho_foto = ancho_foto;

@@ -12,6 +12,7 @@ export interface SubirFotoRequest {
   usuarioId: number;
   pedidoId?: number;  // Cambiado a opcional
   itemPedidoId: number;
+  cantidadCopias?: number;  // Cantidad de copias físicas a imprimir
 }
 
 export class SubirFotoUseCase {
@@ -25,7 +26,7 @@ export class SubirFotoUseCase {
   ) {}
 
   async execute(request: SubirFotoRequest): Promise<Foto> {
-    const { file, usuarioId, pedidoId, itemPedidoId } = request;
+    const { file, usuarioId, pedidoId, itemPedidoId, cantidadCopias } = request;
 
     // Verificar que el usuario existe
     const usuario = await this.usuarioRepository.findById(usuarioId);
@@ -126,6 +127,7 @@ export class SubirFotoUseCase {
       nombre_archivo: file.originalname,
       ruta_almacenamiento: url,
       tamaño_archivo: file.size,
+      cantidad_copias: cantidadCopias && cantidadCopias >= 1 ? cantidadCopias : 1,  // Default 1 copia
       ancho_foto: Number(widthCm.toFixed(2)),  // Ancho físico REAL en cm
       alto_foto: Number(heightCm.toFixed(2)),   // Alto físico REAL en cm
       resolucion_foto: dpi_real                  // DPI REAL de la imagen
