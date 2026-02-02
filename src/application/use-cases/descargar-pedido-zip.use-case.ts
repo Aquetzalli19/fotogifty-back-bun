@@ -90,6 +90,7 @@ export class DescargarPedidoZipUseCase {
 
     // 6. Procesar cada foto
     let fotosProcesamientos = 0;
+    let totalCopiasAgregadas = 0;
     const fotosPorCategoria = new Map<string, number>();
 
     for (let i = 0; i < pedido.fotos.length; i++) {
@@ -112,7 +113,7 @@ export class DescargarPedidoZipUseCase {
         const count = (fotosPorCategoria.get(categoria) || 0) + 1;
         fotosPorCategoria.set(categoria, count);
 
-        // Procesar imagen con metadatos EXIF completos
+        // Procesar imagen con metadatos EXIF completos UNA SOLA VEZ
         const imageWithMetadata = await ImageValidationService.processImageWithFullMetadata(
           fotoBuffer,
           foto.resolucion_foto || 300,
@@ -123,14 +124,24 @@ export class DescargarPedidoZipUseCase {
           }
         );
 
-        // Nombre descriptivo del archivo
         const extension = imageWithMetadata.format;
-        const filename = `foto-${String(i + 1).padStart(3, '0')}-${categoria}-${copias}${copias === 1 ? 'copia' : 'copias'}.${extension}`;
 
-        console.log(`✅ Agregando al ZIP: ${filename}`);
+        // AGREGAR MÚLTIPLES COPIAS AL ZIP
+        console.log(`📦 Agregando ${copias} ${copias === 1 ? 'copia' : 'copias'} de la foto ${i + 1} al ZIP...`);
 
-        // Agregar al ZIP
-        archive.append(imageWithMetadata.buffer, { name: filename });
+        for (let c = 1; c <= copias; c++) {
+          // Nombre descriptivo con número de copia
+          const filename = `foto-${String(i + 1).padStart(3, '0')}-${categoria}-copia-${String(c).padStart(2, '0')}.${extension}`;
+
+          // Agregar al ZIP (reutilizando el mismo buffer procesado)
+          archive.append(imageWithMetadata.buffer, { name: filename });
+
+          totalCopiasAgregadas++;
+
+          if (c === 1 || c === copias || c % 10 === 0) {
+            console.log(`   ✓ ${filename}`);
+          }
+        }
 
         fotosProcesamientos++;
       } catch (error: any) {
@@ -145,7 +156,9 @@ export class DescargarPedidoZipUseCase {
     archive.append(metadataContent, { name: 'metadata.txt' });
 
     // 8. Finalizar ZIP
-    console.log(`📦 Finalizando ZIP (${fotosProcesamientos} fotos procesadas)...`);
+    console.log(`📦 Finalizando ZIP...`);
+    console.log(`   - Fotos únicas procesadas: ${fotosProcesamientos}`);
+    console.log(`   - Total de copias en el ZIP: ${totalCopiasAgregadas}`);
     await archive.finalize();
 
     console.log(`✅ ZIP generado exitosamente para pedido #${pedidoId}`);
@@ -200,18 +213,17 @@ export class DescargarPedidoZipUseCase {
     content += `Estado: ${pedido.estado}\n`;
     content += `Total: $${Number(pedido.total).toFixed(2)} MXN\n\n`;
 
-    content += `FOTOS INCLUIDAS\n`;
+    content += `FOTOS INCLUIDAS EN EL ZIP\n`;
     content += `═══════════════════════════════════════════════════════════════\n\n`;
 
+    let archivoNum = 1;
     pedido.fotos.forEach((foto: any, index: number) => {
       const categoria = this.extractCategoriaFromKey(
         this.s3Service.extractKeyFromUrl(foto.url)
       );
       const copias = foto.cantidad_copias || 1;
-      const filename = `foto-${String(index + 1).padStart(3, '0')}-${categoria}-${copias}${copias === 1 ? 'copia' : 'copias'}.jpg`;
 
-      content += `${index + 1}. ${filename}\n`;
-      content += `   ├─ Nombre original: ${foto.nombre_archivo}\n`;
+      content += `📸 Foto ${index + 1}: ${foto.nombre_archivo}\n`;
       content += `   ├─ Cantidad de copias: ${copias}\n`;
 
       if (foto.ancho_foto && foto.alto_foto) {
@@ -224,7 +236,16 @@ export class DescargarPedidoZipUseCase {
 
       if (foto.tamanio_archivo) {
         const tamanoMB = (foto.tamanio_archivo / 1024 / 1024).toFixed(2);
-        content += `   └─ Tamaño: ${tamanoMB} MB\n`;
+        content += `   ├─ Tamaño original: ${tamanoMB} MB\n`;
+      }
+
+      content += `   └─ Archivos en el ZIP:\n`;
+
+      // Listar todas las copias
+      for (let c = 1; c <= copias; c++) {
+        const filename = `foto-${String(index + 1).padStart(3, '0')}-${categoria}-copia-${String(c).padStart(2, '0')}.jpg`;
+        content += `      ${archivoNum}. ${filename}\n`;
+        archivoNum++;
       }
 
       content += `\n`;
@@ -232,8 +253,9 @@ export class DescargarPedidoZipUseCase {
 
     content += `\nRESUMEN DE IMPRESIÓN\n`;
     content += `═══════════════════════════════════════════════════════════════\n`;
+    content += `Total de archivos en el ZIP: ${totalCopias + 1} (${totalCopias} fotos + metadata.txt)\n`;
     content += `Total de copias a imprimir: ${totalCopias}\n`;
-    content += `Fotos únicas: ${fotosUnicas}\n`;
+    content += `Fotos únicas (originales): ${fotosUnicas}\n`;
     content += `Promedio de copias por foto: ${(totalCopias / fotosUnicas).toFixed(1)}\n\n`;
 
     content += `ESPECIFICACIONES TÉCNICAS\n`;
@@ -243,6 +265,10 @@ export class DescargarPedidoZipUseCase {
     content += `  • Resolución: 300 DPI (o especificada por paquete)\n`;
     content += `  • Metadatos EXIF embebidos\n`;
     content += `  • Copyright: Pedido #${pedido.id} - FotoGifty\n\n`;
+    content += `IMPORTANTE:\n`;
+    content += `  Cada copia es un archivo físico individual en el ZIP.\n`;
+    content += `  Si una foto tiene 20 copias, encontrarás 20 archivos de esa foto.\n`;
+    content += `  Esto facilita la impresión directa sin necesidad de duplicar archivos.\n\n`;
 
     content += `═══════════════════════════════════════════════════════════════\n`;
     content += `Generado: ${new Date().toLocaleString('es-MX')}\n`;

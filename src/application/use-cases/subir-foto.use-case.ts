@@ -85,9 +85,9 @@ export class SubirFotoUseCase {
       validationResult.warnings.forEach(warning => console.warn(`   - ${warning}`));
     }
 
-    // Extraer metadatos reales de la imagen
+    // Extraer metadatos de la imagen original
     const imageMetadata = validationResult.metadata;
-    const dpi_real = imageMetadata.dpi || resolucion_esperada; // Usar el esperado si no hay DPI
+    const dpi_original = imageMetadata.dpi || 72;
 
     // Procesar imagen para impresión: embeber DPI + perfil sRGB
     console.log(`📸 Procesando imagen: ${resolucion_esperada} DPI + perfil sRGB...`);
@@ -112,14 +112,15 @@ export class SubirFotoUseCase {
       contentType
     );
 
-    // Calcular dimensiones físicas reales de la imagen
+    // Calcular dimensiones físicas usando el DPI del paquete (no el original)
+    // Esto asegura que las dimensiones reflejen el tamaño final de impresión
     const { widthCm, heightCm } = ImageValidationService.calculatePhysicalSize(
       imageMetadata.width,
       imageMetadata.height,
-      dpi_real
+      resolucion_esperada  // Usar DPI del paquete
     );
 
-    // Crear registro en base de datos con las dimensiones REALES de la imagen
+    // Crear registro en base de datos
     const foto: Foto = {
       usuario_id: usuarioId,
       pedido_id: pedidoId,  // Esto ahora puede ser opcional
@@ -128,9 +129,9 @@ export class SubirFotoUseCase {
       ruta_almacenamiento: url,
       tamaño_archivo: file.size,
       cantidad_copias: cantidadCopias && cantidadCopias >= 1 ? cantidadCopias : 1,  // Default 1 copia
-      ancho_foto: Number(widthCm.toFixed(2)),  // Ancho físico REAL en cm
-      alto_foto: Number(heightCm.toFixed(2)),   // Alto físico REAL en cm
-      resolucion_foto: dpi_real                  // DPI REAL de la imagen
+      ancho_foto: Number(widthCm.toFixed(2)),  // Ancho físico en cm (con DPI del paquete)
+      alto_foto: Number(heightCm.toFixed(2)),   // Alto físico en cm (con DPI del paquete)
+      resolucion_foto: resolucion_esperada      // DPI del paquete (300, 200, etc.)
     };
 
     return await this.fotoRepository.save(foto);
