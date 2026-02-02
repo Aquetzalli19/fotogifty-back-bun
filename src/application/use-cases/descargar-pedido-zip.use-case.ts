@@ -3,6 +3,7 @@ import { Response } from 'express';
 import { PedidoRepositoryPort } from '../../domain/ports/pedido.repository.port';
 import { S3Service } from '../../infrastructure/services/s3.service';
 import { ImageValidationService } from '../../infrastructure/services/image-validation.service';
+import { TipoUsuario } from '../../domain/entities/tipo-usuario.entity';
 
 export interface DescargarPedidoZipRequest {
   pedidoId: number;
@@ -20,9 +21,9 @@ export class DescargarPedidoZipUseCase {
   async execute(request: DescargarPedidoZipRequest): Promise<void> {
     const { pedidoId, usuarioId, tipoUsuario, response } = request;
 
-    // 1. Validar permisos (solo admin, super_admin y vendedor_ventanilla)
-    const rolesPermitidos = ['ADMIN', 'SUPER_ADMIN', 'VENDEDOR_VENTANILLA'];
-    if (!rolesPermitidos.includes(tipoUsuario)) {
+    // 1. Validar permisos (solo admin, super_admin y store/vendedor)
+    const rolesPermitidos = [TipoUsuario.ADMIN, TipoUsuario.SUPER_ADMIN, TipoUsuario.STORE];
+    if (!rolesPermitidos.includes(tipoUsuario as TipoUsuario)) {
       response.status(403).json({
         success: false,
         error: 'No tienes permisos para descargar fotos de pedidos'

@@ -337,7 +337,7 @@ export class PedidoController {
       await this.descargarPedidoZipUseCase.execute({
         pedidoId,
         usuarioId: user?.id || 0,
-        tipoUsuario: user?.tipo_usuario || 'CLIENTE',
+        tipoUsuario: user?.tipo || 'cliente',
         response: res
       });
     } catch (error) {
