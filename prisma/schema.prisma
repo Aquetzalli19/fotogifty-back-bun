@@ -237,3 +237,24 @@ model aceptaciones_terminos {
   @@index([usuario_id], map: "aceptaciones_terminos_usuario_id_fkey")
   @@index([documento_legal_id], map: "aceptaciones_terminos_documento_legal_id_fkey")
 }
+
+model configuracion_tienda {
+  id                      Int       @id @default(autoincrement())
+  nombre                  String    @default("FotoGifty") @db.VarChar(255)
+  direccion               String    @db.VarChar(500)
+  ciudad                  String    @db.VarChar(100)
+  estado                  String    @db.VarChar(100)
+  codigo_postal           String    @db.VarChar(10)
+  pais                    String    @default("México") @db.VarChar(100)
+  telefono                String    @db.VarChar(20)
+  email                   String?   @db.VarChar(255)
+  latitud                 Decimal   @db.Decimal(10, 8)
+  longitud                Decimal   @db.Decimal(11, 8)
+  horario_lunes_viernes   String?   @db.VarChar(100)
+  horario_sabado          String?   @db.VarChar(100)
+  horario_domingo         String?   @db.VarChar(100)
+  descripcion             String?   @db.Text
+  instrucciones_llegada   String?   @db.Text
+  fecha_actualizacion     DateTime  @default(now()) @updatedAt
+  actualizado_por         Int?
+}

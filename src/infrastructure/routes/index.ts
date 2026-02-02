@@ -17,6 +17,7 @@ import imageValidationRoutes from './image-validation.routes';
 import analyticsRoutes from './analytics.routes';
 import documentoLegalRoutes from './documento-legal.routes';
 import aceptacionTerminosRoutes from './aceptacion-terminos.routes';
+import configuracionTiendaRoutes from './configuracion-tienda.routes';
 
 const configureRoutes = (): Router => {
   const router = Router();
@@ -43,6 +44,7 @@ const configureRoutes = (): Router => {
   analyticsRoutes(apiRouter);
   documentoLegalRoutes(apiRouter);
   aceptacionTerminosRoutes(apiRouter);
+  configuracionTiendaRoutes(apiRouter);
   router.use('/api', apiRouter);
 
   return router;
