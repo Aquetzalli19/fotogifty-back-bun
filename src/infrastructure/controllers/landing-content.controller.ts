@@ -10,6 +10,7 @@ import { CrearOptionLandingUseCase } from '@application/use-cases/crear-option-l
 import { ActualizarOptionLandingUseCase } from '@application/use-cases/actualizar-option-landing.use-case';
 import { EliminarOptionLandingUseCase } from '@application/use-cases/eliminar-option-landing.use-case';
 import { ReordenarOptionsLandingUseCase } from '@application/use-cases/reordenar-options-landing.use-case';
+import { SubirImagenLandingUseCase } from '@application/use-cases/subir-imagen-landing.use-case';
 
 export class LandingContentController {
   constructor(
@@ -23,7 +24,8 @@ export class LandingContentController {
     private readonly crearOptionLandingUseCase: CrearOptionLandingUseCase,
     private readonly actualizarOptionLandingUseCase: ActualizarOptionLandingUseCase,
     private readonly eliminarOptionLandingUseCase: EliminarOptionLandingUseCase,
-    private readonly reordenarOptionsLandingUseCase: ReordenarOptionsLandingUseCase
+    private readonly reordenarOptionsLandingUseCase: ReordenarOptionsLandingUseCase,
+    private readonly subirImagenLandingUseCase: SubirImagenLandingUseCase
   ) {}
 
   // ============================================
@@ -438,7 +440,7 @@ export class LandingContentController {
   }
 
   // ============================================
-  // UPLOAD (Placeholder for S3 integration)
+  // UPLOAD
   // ============================================
 
   async uploadImage(req: Request, res: Response): Promise<void> {
@@ -451,16 +453,44 @@ export class LandingContentController {
         return;
       }
 
-      // TODO: Integrar con S3Service para subir la imagen
-      // const url = await s3Service.uploadImage(req.file, `landing/${section_key}/${image_type}`);
+      const { section_key, image_type } = req.body;
 
-      const url = req.file.path; // Placeholder
+      // Validar parámetros requeridos
+      if (!section_key) {
+        res.status(400).json({
+          success: false,
+          message: 'Se requiere el campo section_key'
+        });
+        return;
+      }
 
-      res.status(200).json({
-        success: true,
-        data: { url },
-        message: 'Imagen subida exitosamente'
-      });
+      if (!image_type) {
+        res.status(400).json({
+          success: false,
+          message: 'Se requiere el campo image_type (main, background, o slide)'
+        });
+        return;
+      }
+
+      // Subir imagen a S3
+      const result = await this.subirImagenLandingUseCase.execute(
+        req.file,
+        section_key,
+        image_type as 'main' | 'background' | 'slide'
+      );
+
+      if (result.success) {
+        res.status(200).json({
+          success: true,
+          data: result.data,
+          message: result.message
+        });
+      } else {
+        res.status(400).json({
+          success: false,
+          message: result.message || 'Error al subir la imagen'
+        });
+      }
     } catch (error: any) {
       console.error('Error en uploadImage:', error);
       res.status(500).json({

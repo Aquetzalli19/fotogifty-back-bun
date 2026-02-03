@@ -1,4 +1,5 @@
 import { Router } from 'express';
+import multer from 'multer';
 import { LandingContentController } from '@infrastructure/controllers/landing-content.controller';
 import { ObtenerSeccionesLandingUseCase } from '@application/use-cases/obtener-secciones-landing.use-case';
 import { ObtenerSeccionLandingUseCase } from '@application/use-cases/obtener-seccion-landing.use-case';
@@ -11,10 +12,27 @@ import { CrearOptionLandingUseCase } from '@application/use-cases/crear-option-l
 import { ActualizarOptionLandingUseCase } from '@application/use-cases/actualizar-option-landing.use-case';
 import { EliminarOptionLandingUseCase } from '@application/use-cases/eliminar-option-landing.use-case';
 import { ReordenarOptionsLandingUseCase } from '@application/use-cases/reordenar-options-landing.use-case';
+import { SubirImagenLandingUseCase } from '@application/use-cases/subir-imagen-landing.use-case';
 import { PrismaLandingSectionRepository } from '@infrastructure/repositories/prisma-landing-section.repository';
 import { PrismaLandingSlideRepository } from '@infrastructure/repositories/prisma-landing-slide.repository';
 import { PrismaLandingOptionRepository } from '@infrastructure/repositories/prisma-landing-option.repository';
+import { S3Service } from '@infrastructure/services/s3.service';
 import { authenticateToken, requireAdmin } from '@infrastructure/middlewares/auth.middleware';
+
+// Configurar multer para memoria
+const upload = multer({
+  storage: multer.memoryStorage(),
+  limits: {
+    fileSize: 10 * 1024 * 1024, // 10MB
+  },
+  fileFilter: (req, file, cb) => {
+    if (file.mimetype.startsWith('image/')) {
+      cb(null, true);
+    } else {
+      cb(new Error('Solo se permiten archivos de imagen'), false);
+    }
+  },
+});
 
 /**
  * @swagger
@@ -50,6 +68,10 @@ const landingContentRoutes = (router: Router): void => {
   const eliminarOptionLandingUseCase = new EliminarOptionLandingUseCase(landingOptionRepository);
   const reordenarOptionsLandingUseCase = new ReordenarOptionsLandingUseCase(landingOptionRepository, landingSectionRepository);
 
+  // S3 Service
+  const s3Service = new S3Service();
+  const subirImagenLandingUseCase = new SubirImagenLandingUseCase(s3Service);
+
   // Controller
   const landingContentController = new LandingContentController(
     obtenerSeccionesLandingUseCase,
@@ -62,7 +84,8 @@ const landingContentRoutes = (router: Router): void => {
     crearOptionLandingUseCase,
     actualizarOptionLandingUseCase,
     eliminarOptionLandingUseCase,
-    reordenarOptionsLandingUseCase
+    reordenarOptionsLandingUseCase,
+    subirImagenLandingUseCase
   );
 
   // ============================================
@@ -488,15 +511,52 @@ const landingContentRoutes = (router: Router): void => {
    *         multipart/form-data:
    *           schema:
    *             type: object
+   *             required:
+   *               - section_key
+   *               - image_type
+   *               - imagen
    *             properties:
+   *               section_key:
+   *                 type: string
+   *                 description: Clave de la sección (ej. "hero", "extensions")
+   *                 example: "hero"
+   *               image_type:
+   *                 type: string
+   *                 enum: [main, background, slide]
+   *                 description: Tipo de imagen
+   *                 example: "slide"
    *               imagen:
    *                 type: string
    *                 format: binary
+   *                 description: Archivo de imagen
    *     responses:
    *       200:
    *         description: Imagen subida exitosamente
+   *         content:
+   *           application/json:
+   *             schema:
+   *               type: object
+   *               properties:
+   *                 success:
+   *                   type: boolean
+   *                   example: true
+   *                 data:
+   *                   type: object
+   *                   properties:
+   *                     url:
+   *                       type: string
+   *                       example: "https://fotogifty.s3.us-east-1.amazonaws.com/landing/hero/slide/abc123.jpg"
+   *                 message:
+   *                   type: string
+   *                   example: "Imagen subida exitosamente"
+   *       400:
+   *         description: Datos inválidos
+   *       401:
+   *         description: No autenticado
+   *       403:
+   *         description: No autorizado
    */
-  router.post('/landing-content/upload', authenticateToken, requireAdmin, (req, res) =>
+  router.post('/landing-content/upload', authenticateToken, requireAdmin, upload.single('imagen'), (req, res) =>
     landingContentController.uploadImage(req, res)
   );
 };
