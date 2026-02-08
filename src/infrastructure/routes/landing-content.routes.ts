@@ -275,6 +275,38 @@ const landingContentRoutes = (router: Router): void => {
 
   /**
    * @swagger
+   * /api/landing-content/slides/reorder:
+   *   put:
+   *     summary: Reordenar slides de una sección (solo administradores)
+   *     tags: [Landing Content]
+   *     security:
+   *       - bearerAuth: []
+   *     requestBody:
+   *       required: true
+   *       content:
+   *         application/json:
+   *           schema:
+   *             type: object
+   *             required:
+   *               - section_key
+   *               - slide_ids
+   *             properties:
+   *               section_key:
+   *                 type: string
+   *               slide_ids:
+   *                 type: array
+   *                 items:
+   *                   type: integer
+   *     responses:
+   *       200:
+   *         description: Slides reordenados exitosamente
+   */
+  router.put('/landing-content/slides/reorder', authenticateToken, requireAdmin, (req, res) =>
+    landingContentController.reorderSlides(req, res)
+  );
+
+  /**
+   * @swagger
    * /api/landing-content/slides/{id}:
    *   put:
    *     summary: Actualizar un slide (solo administradores)
@@ -337,38 +369,6 @@ const landingContentRoutes = (router: Router): void => {
     landingContentController.deleteSlide(req, res)
   );
 
-  /**
-   * @swagger
-   * /api/landing-content/slides/reorder:
-   *   put:
-   *     summary: Reordenar slides de una sección (solo administradores)
-   *     tags: [Landing Content]
-   *     security:
-   *       - bearerAuth: []
-   *     requestBody:
-   *       required: true
-   *       content:
-   *         application/json:
-   *           schema:
-   *             type: object
-   *             required:
-   *               - section_key
-   *               - slide_ids
-   *             properties:
-   *               section_key:
-   *                 type: string
-   *               slide_ids:
-   *                 type: array
-   *                 items:
-   *                   type: integer
-   *     responses:
-   *       200:
-   *         description: Slides reordenados exitosamente
-   */
-  router.put('/landing-content/slides/reorder', authenticateToken, requireAdmin, (req, res) =>
-    landingContentController.reorderSlides(req, res)
-  );
-
   // ============================================
   // OPTIONS
   // ============================================
@@ -403,6 +403,38 @@ const landingContentRoutes = (router: Router): void => {
    */
   router.post('/landing-content/options', authenticateToken, requireAdmin, (req, res) =>
     landingContentController.createOption(req, res)
+  );
+
+  /**
+   * @swagger
+   * /api/landing-content/options/reorder:
+   *   put:
+   *     summary: Reordenar opciones de una sección (solo administradores)
+   *     tags: [Landing Content]
+   *     security:
+   *       - bearerAuth: []
+   *     requestBody:
+   *       required: true
+   *       content:
+   *         application/json:
+   *           schema:
+   *             type: object
+   *             required:
+   *               - section_key
+   *               - option_ids
+   *             properties:
+   *               section_key:
+   *                 type: string
+   *               option_ids:
+   *                 type: array
+   *                 items:
+   *                   type: integer
+   *     responses:
+   *       200:
+   *         description: Opciones reordenadas exitosamente
+   */
+  router.put('/landing-content/options/reorder', authenticateToken, requireAdmin, (req, res) =>
+    landingContentController.reorderOptions(req, res)
   );
 
   /**
@@ -459,38 +491,6 @@ const landingContentRoutes = (router: Router): void => {
    */
   router.delete('/landing-content/options/:id', authenticateToken, requireAdmin, (req, res) =>
     landingContentController.deleteOption(req, res)
-  );
-
-  /**
-   * @swagger
-   * /api/landing-content/options/reorder:
-   *   put:
-   *     summary: Reordenar opciones de una sección (solo administradores)
-   *     tags: [Landing Content]
-   *     security:
-   *       - bearerAuth: []
-   *     requestBody:
-   *       required: true
-   *       content:
-   *         application/json:
-   *           schema:
-   *             type: object
-   *             required:
-   *               - section_key
-   *               - option_ids
-   *             properties:
-   *               section_key:
-   *                 type: string
-   *               option_ids:
-   *                 type: array
-   *                 items:
-   *                   type: integer
-   *     responses:
-   *       200:
-   *         description: Opciones reordenadas exitosamente
-   */
-  router.put('/landing-content/options/reorder', authenticateToken, requireAdmin, (req, res) =>
-    landingContentController.reorderOptions(req, res)
   );
 
   // ============================================
