@@ -46,11 +46,25 @@ export class GuardarCustomizacionTemporalUseCase {
         };
       }
 
-      if (!datos || !datos.images || !Array.isArray(datos.images)) {
+      if (!datos || typeof datos !== 'object') {
         return {
           success: false,
           message: 'Datos de customización inválidos',
           error: 'Datos de customización inválidos'
+        };
+      }
+
+      // Validar estructura según el tipo de editor
+      const hasValidContent =
+        (editorType === 'standard' && Array.isArray(datos.images)) ||
+        (editorType === 'polaroid' && Array.isArray(datos.polaroids)) ||
+        (editorType === 'calendar' && (Array.isArray(datos.months) || Array.isArray(datos.images)));
+
+      if (!hasValidContent) {
+        return {
+          success: false,
+          message: 'Datos de customización inválidos para el tipo de editor',
+          error: 'Datos de customización inválidos para el tipo de editor'
         };
       }
 

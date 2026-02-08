@@ -25,7 +25,7 @@ export class App {
     this.app.use('/api/webhooks/stripe', express.raw({ type: 'application/json' }));
 
     // Para todas las demás rutas, parsear JSON normalmente
-    this.app.use(express.json());
+    this.app.use(express.json({ limit: '50mb' }));
   }
 
   private initializeSwagger(): void {
