@@ -20,8 +20,8 @@ export class VerificarIdentidadUseCase {
         };
       }
 
-      // Validar formato de teléfono (solo dígitos, mínimo 10 caracteres)
-      const telefonoRegex = /^[0-9]{10,}$/;
+      // Validar formato de teléfono (opcionalmente con +, mínimo 10 dígitos)
+      const telefonoRegex = /^\+?[0-9]{10,}$/;
       if (!telefonoRegex.test(telefono)) {
         return {
           success: false,
