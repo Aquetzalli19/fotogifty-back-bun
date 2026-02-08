@@ -31,6 +31,7 @@ export class PrismaConfiguracionTiendaRepository implements ConfiguracionTiendaR
     if (configuracion.horario_domingo !== undefined) data.horario_domingo = configuracion.horario_domingo;
     if (configuracion.descripcion !== undefined) data.descripcion = configuracion.descripcion;
     if (configuracion.instrucciones_llegada !== undefined) data.instrucciones_llegada = configuracion.instrucciones_llegada;
+    if (configuracion.direccion_maps !== undefined) data.direccion_maps = configuracion.direccion_maps;
     if (actualizadoPor !== undefined) data.actualizado_por = actualizadoPor;
 
     const updated = await prisma.configuracion_tienda.update({
@@ -58,6 +59,7 @@ export class PrismaConfiguracionTiendaRepository implements ConfiguracionTiendaR
       prismaConfig.horario_domingo,
       prismaConfig.descripcion,
       prismaConfig.instrucciones_llegada,
+      prismaConfig.direccion_maps,
       prismaConfig.id,
       prismaConfig.fecha_actualizacion,
       prismaConfig.actualizado_por

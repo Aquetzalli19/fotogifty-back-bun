@@ -258,6 +258,7 @@ model configuracion_tienda {
   horario_domingo         String?   @db.VarChar(100)
   descripcion             String?   @db.Text
   instrucciones_llegada   String?   @db.Text
+  direccion_maps          String?   @db.VarChar(500)
   fecha_actualizacion     DateTime  @default(now()) @updatedAt
   actualizado_por         Int?
 }

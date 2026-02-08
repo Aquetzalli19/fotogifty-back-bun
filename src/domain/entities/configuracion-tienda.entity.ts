@@ -15,6 +15,7 @@ export interface ConfiguracionTienda {
   horario_domingo?: string;
   descripcion?: string;
   instrucciones_llegada?: string;
+  direccion_maps?: string;
   fecha_actualizacion?: Date;
   actualizado_por?: number;
 }
@@ -36,6 +37,7 @@ export class ConfiguracionTiendaEntity implements ConfiguracionTienda {
   public horario_domingo?: string;
   public descripcion?: string;
   public instrucciones_llegada?: string;
+  public direccion_maps?: string;
   public fecha_actualizacion?: Date;
   public actualizado_por?: number;
 
@@ -55,6 +57,7 @@ export class ConfiguracionTiendaEntity implements ConfiguracionTienda {
     horario_domingo?: string,
     descripcion?: string,
     instrucciones_llegada?: string,
+    direccion_maps?: string,
     id?: number,
     fecha_actualizacion?: Date,
     actualizado_por?: number
@@ -75,6 +78,7 @@ export class ConfiguracionTiendaEntity implements ConfiguracionTienda {
     this.horario_domingo = horario_domingo;
     this.descripcion = descripcion;
     this.instrucciones_llegada = instrucciones_llegada;
+    this.direccion_maps = direccion_maps;
     this.fecha_actualizacion = fecha_actualizacion ?? new Date();
     this.actualizado_por = actualizado_por;
   }
@@ -94,7 +98,8 @@ export class ConfiguracionTiendaEntity implements ConfiguracionTienda {
     horario_sabado?: string,
     horario_domingo?: string,
     descripcion?: string,
-    instrucciones_llegada?: string
+    instrucciones_llegada?: string,
+    direccion_maps?: string
   ): ConfiguracionTiendaEntity {
     return new ConfiguracionTiendaEntity(
       nombre,
@@ -111,7 +116,8 @@ export class ConfiguracionTiendaEntity implements ConfiguracionTienda {
       horario_sabado,
       horario_domingo,
       descripcion,
-      instrucciones_llegada
+      instrucciones_llegada,
+      direccion_maps
     );
   }
 }
