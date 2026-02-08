@@ -49,7 +49,8 @@ export class ConfiguracionTiendaController {
         horario_sabado,
         horario_domingo,
         descripcion,
-        instrucciones_llegada
+        instrucciones_llegada,
+        direccion_maps
       } = req.body;
 
       // Validaciones básicas
@@ -83,7 +84,8 @@ export class ConfiguracionTiendaController {
           horario_sabado,
           horario_domingo,
           descripcion,
-          instrucciones_llegada
+          instrucciones_llegada,
+          direccion_maps
         },
         usuarioId
       );
