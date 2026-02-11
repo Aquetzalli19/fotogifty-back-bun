@@ -56,8 +56,8 @@ export class SubirImagenLandingUseCase {
       const uniqueId = uuidv4();
       const s3Key = `landing/${section_key}/${image_type}/${uniqueId}.${extension}`;
 
-      // Subir a S3
-      const url = await this.s3Service.uploadFile(file, s3Key);
+      // Subir a S3 con acceso público
+      const url = await this.s3Service.uploadFile(file, s3Key, { acl: 'public-read' });
 
       return {
         success: true,

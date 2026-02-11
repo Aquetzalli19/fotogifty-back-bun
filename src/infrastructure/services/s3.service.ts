@@ -1,4 +1,4 @@
-import { S3Client, PutObjectCommand, GetObjectCommand } from '@aws-sdk/client-s3';
+import { S3Client, PutObjectCommand, GetObjectCommand, type ObjectCannedACL } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 
 export class S3Service {
@@ -16,12 +16,13 @@ export class S3Service {
     this.bucketName = process.env.S3_BUCKET_NAME!;
   }
 
-  async uploadFile(file: Express.Multer.File, key: string): Promise<string> {
+  async uploadFile(file: Express.Multer.File, key: string, options?: { acl?: ObjectCannedACL }): Promise<string> {
     const command = new PutObjectCommand({
       Bucket: this.bucketName,
       Key: key,
       Body: file.buffer,
       ContentType: file.mimetype,
+      ...(options?.acl && { ACL: options.acl }),
     });
 
     await this.s3Client.send(command);
