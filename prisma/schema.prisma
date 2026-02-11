@@ -79,6 +79,7 @@ model paquetes_predefinidos {
   estado           Boolean        @default(true)
   resolucion_foto  Int            @default(300)
   imagen_url       String?        @db.VarChar(500)
+  template_url     String?        @db.VarChar(500)
   items_pedido_new items_pedido[] @relation("items_pedido_to_paquetes_predefinidos_new")
   items_pedido_old items_pedido[] @relation("items_pedido_to_paquetes_predefinidos_old")
   categoria        categorias?    @relation(fields: [categoria_id], references: [id])

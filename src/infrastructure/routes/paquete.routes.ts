@@ -145,7 +145,7 @@ const paqueteRoutes = (router: Router): void => {
    *       500:
    *         description: Error interno del servidor
    */
-  router.post('/paquetes', upload.single('imagen'), handleMulterError, (req, res) =>
+  router.post('/paquetes', upload.fields([{ name: 'imagen', maxCount: 1 }, { name: 'template', maxCount: 1 }]), handleMulterError, (req, res) =>
     paqueteController.crearPaquete(req, res)
   );
 
@@ -304,7 +304,7 @@ const paqueteRoutes = (router: Router): void => {
    *       500:
    *         description: Error interno del servidor
    */
-  router.put('/paquetes/:id', upload.single('imagen'), handleMulterError, (req, res) =>
+  router.put('/paquetes/:id', upload.fields([{ name: 'imagen', maxCount: 1 }, { name: 'template', maxCount: 1 }]), handleMulterError, (req, res) =>
     paqueteController.updatePaquete(req, res)
   );
 

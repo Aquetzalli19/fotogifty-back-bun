@@ -1,4 +1,5 @@
 import { Request, Response } from 'express';
+import sharp from 'sharp';
 import { PaqueteEntity } from '../../domain/entities/paquete.entity';
 import { CrearPaqueteUseCase } from '../../application/use-cases/crear-paquete.use-case';
 import { ActualizarPaqueteUseCase } from '../../application/use-cases/actualizar-paquete.use-case';
@@ -35,8 +36,8 @@ export class PaqueteController {
       const parsedPrecio = parseFloat(precio);
       const parsedEstado = estado === 'true' || estado === true;
       const parsedResolucionFoto = resolucion_foto ? parseInt(resolucion_foto) : undefined;
-      const parsedAnchoFoto = ancho_foto ? parseFloat(ancho_foto) : undefined;
-      const parsedAltoFoto = alto_foto ? parseFloat(alto_foto) : undefined;
+      let parsedAnchoFoto = ancho_foto ? parseFloat(ancho_foto) : undefined;
+      let parsedAltoFoto = alto_foto ? parseFloat(alto_foto) : undefined;
 
       // Validar que los campos requeridos estén presentes
       if (!nombre || typeof nombre !== 'string' || nombre.trim().length === 0) {
@@ -63,15 +64,37 @@ export class PaqueteController {
         return;
       }
 
-      // Procesar imagen si fue enviada
-      let imagenUrl: string | undefined = undefined;
-      if (req.file) {
-        // Generar key única para S3
-        const timestamp = Date.now();
-        const key = `paquetes/${timestamp}-${req.file.originalname}`;
+      // Procesar archivos subidos (imagen y template)
+      const files = req.files as { [fieldname: string]: Express.Multer.File[] } | undefined;
 
-        // Subir a S3
-        imagenUrl = await this.s3Service.uploadFile(req.file, key);
+      let imagenUrl: string | undefined = undefined;
+      if (files?.imagen?.[0]) {
+        const imagenFile = files.imagen[0];
+        const timestamp = Date.now();
+        const key = `paquetes/${timestamp}-${imagenFile.originalname}`;
+        imagenUrl = await this.s3Service.uploadFile(imagenFile, key);
+      }
+
+      let templateUrl: string | undefined = undefined;
+      if (files?.template?.[0]) {
+        const templateFile = files.template[0];
+
+        if (templateFile.mimetype !== 'image/png') {
+          res.status(400).json({
+            success: false,
+            message: 'El template debe ser un archivo PNG'
+          });
+          return;
+        }
+
+        const metadata = await sharp(templateFile.buffer).metadata();
+        const dpi = parsedResolucionFoto || 300;
+        parsedAnchoFoto = (metadata.width || 0) / dpi;
+        parsedAltoFoto = (metadata.height || 0) / dpi;
+
+        const timestamp = Date.now();
+        const key = `templates/${timestamp}-${templateFile.originalname}`;
+        templateUrl = await this.s3Service.uploadFile(templateFile, key);
       }
 
       // Ejecutar el caso de uso
@@ -85,7 +108,8 @@ export class PaqueteController {
         parsedResolucionFoto,
         parsedAnchoFoto,
         parsedAltoFoto,
-        imagenUrl
+        imagenUrl,
+        templateUrl
       );
 
       if (result.success) {
@@ -244,18 +268,40 @@ export class PaqueteController {
       const parsedPrecio = precio ? parseFloat(precio) : undefined;
       const parsedEstado = estado !== undefined ? (estado === 'true' || estado === true) : undefined;
       const parsedResolucionFoto = resolucion_foto ? parseInt(resolucion_foto) : undefined;
-      const parsedAnchoFoto = ancho_foto ? parseFloat(ancho_foto) : undefined;
-      const parsedAltoFoto = alto_foto ? parseFloat(alto_foto) : undefined;
+      let parsedAnchoFoto = ancho_foto ? parseFloat(ancho_foto) : undefined;
+      let parsedAltoFoto = alto_foto ? parseFloat(alto_foto) : undefined;
 
-      // Procesar imagen si fue enviada
+      // Procesar archivos subidos (imagen y template)
+      const files = req.files as { [fieldname: string]: Express.Multer.File[] } | undefined;
+
       let imagenUrl: string | undefined = undefined;
-      if (req.file) {
-        // Generar key única para S3
+      if (files?.imagen?.[0]) {
+        const imagenFile = files.imagen[0];
         const timestamp = Date.now();
-        const key = `paquetes/${timestamp}-${req.file.originalname}`;
+        const key = `paquetes/${timestamp}-${imagenFile.originalname}`;
+        imagenUrl = await this.s3Service.uploadFile(imagenFile, key);
+      }
 
-        // Subir a S3
-        imagenUrl = await this.s3Service.uploadFile(req.file, key);
+      let templateUrl: string | undefined = undefined;
+      if (files?.template?.[0]) {
+        const templateFile = files.template[0];
+
+        if (templateFile.mimetype !== 'image/png') {
+          res.status(400).json({
+            success: false,
+            message: 'El template debe ser un archivo PNG'
+          });
+          return;
+        }
+
+        const metadata = await sharp(templateFile.buffer).metadata();
+        const dpi = parsedResolucionFoto || 300;
+        parsedAnchoFoto = (metadata.width || 0) / dpi;
+        parsedAltoFoto = (metadata.height || 0) / dpi;
+
+        const timestamp = Date.now();
+        const key = `templates/${timestamp}-${templateFile.originalname}`;
+        templateUrl = await this.s3Service.uploadFile(templateFile, key);
       }
 
       // Ejecutar el caso de uso de actualización
@@ -270,7 +316,8 @@ export class PaqueteController {
         parsedResolucionFoto,
         parsedAnchoFoto,
         parsedAltoFoto,
-        imagenUrl
+        imagenUrl,
+        templateUrl
       );
 
       if (result.success) {
