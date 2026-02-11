@@ -55,6 +55,21 @@ export class S3Service {
   }
 
   /**
+   * Genera una URL firmada para visualizar un archivo (sin forzar descarga)
+   */
+  async getSignedViewUrl(
+    key: string,
+    expiresIn: number = 3600
+  ): Promise<string> {
+    const command = new GetObjectCommand({
+      Bucket: this.bucketName,
+      Key: key,
+    });
+
+    return await getSignedUrl(this.s3Client, command, { expiresIn });
+  }
+
+  /**
    * Genera una URL firmada para descargar un archivo
    * La URL expira después del tiempo especificado
    */

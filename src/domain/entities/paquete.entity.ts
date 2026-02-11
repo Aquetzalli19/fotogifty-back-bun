@@ -12,7 +12,9 @@ export interface Paquete {
   alto_foto?: number;
   imagen_url?: string;
   template_url?: string;
+  template_key?: string;
   templates_calendario?: Record<string, string>;
+  templates_calendario_keys?: Record<string, string>;
 }
 
 export class PaqueteEntity implements Paquete {
@@ -29,7 +31,9 @@ export class PaqueteEntity implements Paquete {
   public alto_foto?: number;
   public imagen_url?: string;
   public template_url?: string;
+  public template_key?: string;
   public templates_calendario?: Record<string, string>;
+  public templates_calendario_keys?: Record<string, string>;
 
   constructor(
     nombre: string,
@@ -44,7 +48,9 @@ export class PaqueteEntity implements Paquete {
     imagen_url?: string,
     template_url?: string,
     templates_calendario?: Record<string, string>,
-    id?: number
+    id?: number,
+    template_key?: string,
+    templates_calendario_keys?: Record<string, string>
   ) {
     this.id = id;
     this.nombre = nombre;
@@ -58,7 +64,9 @@ export class PaqueteEntity implements Paquete {
     this.alto_foto = alto_foto;
     this.imagen_url = imagen_url;
     this.template_url = template_url;
+    this.template_key = template_key;
     this.templates_calendario = templates_calendario;
+    this.templates_calendario_keys = templates_calendario_keys;
   }
 
   static create(
@@ -73,7 +81,9 @@ export class PaqueteEntity implements Paquete {
     alto_foto?: number,
     imagen_url?: string,
     template_url?: string,
-    templates_calendario?: Record<string, string>
+    templates_calendario?: Record<string, string>,
+    template_key?: string,
+    templates_calendario_keys?: Record<string, string>
   ): PaqueteEntity {
     return new PaqueteEntity(
       nombre,
@@ -87,7 +97,10 @@ export class PaqueteEntity implements Paquete {
       alto_foto,
       imagen_url,
       template_url,
-      templates_calendario
+      templates_calendario,
+      undefined,
+      template_key,
+      templates_calendario_keys
     );
   }
 }

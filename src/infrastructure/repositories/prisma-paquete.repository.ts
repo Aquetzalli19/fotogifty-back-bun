@@ -98,6 +98,11 @@ export class PrismaPaqueteRepository implements PaqueteRepositoryPort {
   }
 
   private toDomain(prismaPaquete: any): Paquete {
+    const parseJson = (val: any) => {
+      if (!val) return undefined;
+      return typeof val === 'string' ? JSON.parse(val) : val;
+    };
+
     return {
       id: prismaPaquete.id,
       nombre: prismaPaquete.nombre,
@@ -112,11 +117,9 @@ export class PrismaPaqueteRepository implements PaqueteRepositoryPort {
       alto_foto: Number(prismaPaquete.alto_foto),
       imagen_url: prismaPaquete.imagen_url,
       template_url: prismaPaquete.template_url,
-      templates_calendario: prismaPaquete.templates_calendario
-        ? (typeof prismaPaquete.templates_calendario === 'string'
-          ? JSON.parse(prismaPaquete.templates_calendario)
-          : prismaPaquete.templates_calendario)
-        : undefined
+      template_key: prismaPaquete.template_key,
+      templates_calendario: parseJson(prismaPaquete.templates_calendario),
+      templates_calendario_keys: parseJson(prismaPaquete.templates_calendario_keys),
     };
   }
 
@@ -124,7 +127,7 @@ export class PrismaPaqueteRepository implements PaqueteRepositoryPort {
     return {
       nombre: paquete.nombre,
       categoria_id: paquete.categoria_id || null,
-      tipo_paquete_id: paquete.tipo_paquete_id || null, // Aseguramos que este campo se maneje explícitamente como opcional
+      tipo_paquete_id: (paquete as any).tipo_paquete_id || null,
       descripcion: paquete.descripcion,
       cantidad_fotos: paquete.cantidad_fotos,
       precio: paquete.precio,
@@ -134,7 +137,9 @@ export class PrismaPaqueteRepository implements PaqueteRepositoryPort {
       alto_foto: paquete.alto_foto,
       imagen_url: paquete.imagen_url || null,
       template_url: paquete.template_url || null,
-      templates_calendario: paquete.templates_calendario || null
+      template_key: paquete.template_key || null,
+      templates_calendario: paquete.templates_calendario || null,
+      templates_calendario_keys: paquete.templates_calendario_keys || null,
     };
   }
 }

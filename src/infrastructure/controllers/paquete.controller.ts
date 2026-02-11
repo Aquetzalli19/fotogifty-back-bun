@@ -16,6 +16,26 @@ export class PaqueteController {
     private s3Service: S3Service
   ) {}
 
+  /**
+   * Genera URLs firmadas frescas para un paquete a partir de sus keys almacenadas
+   */
+  private async addSignedUrls(paquete: any): Promise<any> {
+    if (paquete.template_key) {
+      paquete.template_url = await this.s3Service.getSignedViewUrl(paquete.template_key);
+    }
+
+    if (paquete.templates_calendario_keys) {
+      const keys = paquete.templates_calendario_keys as Record<string, string>;
+      const urls: Record<string, string> = {};
+      for (const [mes, key] of Object.entries(keys)) {
+        urls[mes] = await this.s3Service.getSignedViewUrl(key);
+      }
+      paquete.templates_calendario = urls;
+    }
+
+    return paquete;
+  }
+
   async crearPaquete(req: Request, res: Response): Promise<void> {
     try {
       const {
@@ -75,7 +95,7 @@ export class PaqueteController {
         imagenUrl = await this.s3Service.uploadFile(imagenFile, key);
       }
 
-      let templateUrl: string | undefined = undefined;
+      let templateKey: string | undefined = undefined;
       if (files?.template?.[0]) {
         const templateFile = files.template[0];
 
@@ -93,12 +113,12 @@ export class PaqueteController {
         parsedAltoFoto = (metadata.height || 0) / dpi;
 
         const timestamp = Date.now();
-        const key = `templates/${timestamp}-${templateFile.originalname}`;
-        templateUrl = await this.s3Service.uploadFile(templateFile, key);
+        templateKey = `templates/${timestamp}-${templateFile.originalname}`;
+        await this.s3Service.uploadFile(templateFile, templateKey);
       }
 
       // Procesar templates de calendario (template_mes_1 a template_mes_12)
-      let calendarTemplates: Record<string, string> | undefined = undefined;
+      let calendarTemplateKeys: Record<string, string> | undefined = undefined;
       const dpi = parsedResolucionFoto || 300;
       let firstDimensions: { width: number; height: number } | null = null;
 
@@ -131,11 +151,12 @@ export class PaqueteController {
         }
 
         const key = `templates/calendario-mes${mes}-${Date.now()}.png`;
-        if (!calendarTemplates) calendarTemplates = {};
-        calendarTemplates[mes.toString()] = await this.s3Service.uploadFile(file, key);
+        await this.s3Service.uploadFile(file, key);
+        if (!calendarTemplateKeys) calendarTemplateKeys = {};
+        calendarTemplateKeys[mes.toString()] = key;
       }
 
-      // Ejecutar el caso de uso
+      // Ejecutar el caso de uso (guarda keys, no URLs)
       const result = await this.crearPaqueteUseCase.execute(
         nombre.trim(),
         parsedCategoriaId,
@@ -147,14 +168,18 @@ export class PaqueteController {
         parsedAnchoFoto,
         parsedAltoFoto,
         imagenUrl,
-        templateUrl,
-        calendarTemplates
+        undefined, // template_url ya no se guarda directamente
+        undefined, // templates_calendario ya no se guarda directamente
+        templateKey,
+        calendarTemplateKeys
       );
 
       if (result.success) {
+        // Generar URLs firmadas frescas antes de responder
+        const dataConUrls = await this.addSignedUrls(result.data);
         res.status(201).json({
           success: true,
-          data: result.data
+          data: dataConUrls
         });
       } else {
         res.status(400).json({
@@ -197,9 +222,12 @@ export class PaqueteController {
       // Obtener paquetes por categoría
       const paquetes = await this.paqueteRepository.findByCategoriaId(categoriaIdNum);
 
+      // Generar URLs firmadas frescas
+      const paquetesConUrls = await Promise.all(paquetes.map(p => this.addSignedUrls(p)));
+
       res.status(200).json({
         success: true,
-        data: paquetes
+        data: paquetesConUrls
       });
     } catch (error) {
       console.error('Error en getPaquetesByCategoria:', error);
@@ -228,9 +256,12 @@ export class PaqueteController {
       // Obtener paquetes con filtro opcional de estado
       const paquetes = await this.paqueteRepository.findAll(estadoFiltro);
 
+      // Generar URLs firmadas frescas
+      const paquetesConUrls = await Promise.all(paquetes.map(p => this.addSignedUrls(p)));
+
       res.status(200).json({
         success: true,
-        data: paquetes
+        data: paquetesConUrls
       });
     } catch (error) {
       console.error('Error en getAllPaquetes:', error);
@@ -264,9 +295,12 @@ export class PaqueteController {
         return;
       }
 
+      // Generar URLs firmadas frescas
+      const paqueteConUrls = await this.addSignedUrls(paquete);
+
       res.status(200).json({
         success: true,
-        data: paquete
+        data: paqueteConUrls
       });
     } catch (error) {
       console.error('Error en getPaqueteById:', error);
@@ -321,7 +355,7 @@ export class PaqueteController {
         imagenUrl = await this.s3Service.uploadFile(imagenFile, key);
       }
 
-      let templateUrl: string | undefined = undefined;
+      let templateKey: string | undefined = undefined;
       if (files?.template?.[0]) {
         const templateFile = files.template[0];
 
@@ -339,12 +373,12 @@ export class PaqueteController {
         parsedAltoFoto = (metadata.height || 0) / dpi;
 
         const timestamp = Date.now();
-        const key = `templates/${timestamp}-${templateFile.originalname}`;
-        templateUrl = await this.s3Service.uploadFile(templateFile, key);
+        templateKey = `templates/${timestamp}-${templateFile.originalname}`;
+        await this.s3Service.uploadFile(templateFile, templateKey);
       }
 
       // Procesar templates de calendario (template_mes_1 a template_mes_12)
-      let calendarTemplates: Record<string, string> | undefined = undefined;
+      let calendarTemplateKeys: Record<string, string> | undefined = undefined;
       const dpi = parsedResolucionFoto || 300;
       let firstDimensions: { width: number; height: number } | null = null;
 
@@ -377,11 +411,12 @@ export class PaqueteController {
         }
 
         const key = `templates/calendario-mes${mes}-${Date.now()}.png`;
-        if (!calendarTemplates) calendarTemplates = {};
-        calendarTemplates[mes.toString()] = await this.s3Service.uploadFile(file, key);
+        await this.s3Service.uploadFile(file, key);
+        if (!calendarTemplateKeys) calendarTemplateKeys = {};
+        calendarTemplateKeys[mes.toString()] = key;
       }
 
-      // Ejecutar el caso de uso de actualización
+      // Ejecutar el caso de uso de actualización (guarda keys, no URLs)
       const result = await this.actualizarPaqueteUseCase.execute(
         idNum,
         nombre,
@@ -394,14 +429,18 @@ export class PaqueteController {
         parsedAnchoFoto,
         parsedAltoFoto,
         imagenUrl,
-        templateUrl,
-        calendarTemplates
+        undefined, // template_url ya no se guarda directamente
+        undefined, // templates_calendario ya no se guarda directamente
+        templateKey,
+        calendarTemplateKeys
       );
 
       if (result.success) {
+        // Generar URLs firmadas frescas antes de responder
+        const dataConUrls = await this.addSignedUrls(result.data);
         res.status(200).json({
           success: true,
-          data: result.data
+          data: dataConUrls
         });
       } else {
         const statusCode = result.error?.includes('no encontrado') ? 404 : 400;
