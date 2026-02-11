@@ -91,9 +91,12 @@ model paquetes_predefinidos {
 }
 
 model estados_pedido {
-  id          Int       @id
-  nombre      String    @db.VarChar(50)
+  id          Int       @id @default(autoincrement())
+  nombre      String    @unique @db.VarChar(50)
   descripcion String?   @db.Text
+  color       String?   @db.VarChar(9)
+  orden       Int       @default(0)
+  activo      Boolean   @default(true)
   pedidos     pedidos[]
 }
 

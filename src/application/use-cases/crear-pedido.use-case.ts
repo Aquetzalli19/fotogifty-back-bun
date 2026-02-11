@@ -1,4 +1,4 @@
-import { PedidoEntity, EstadoPedido, EstadoPago } from '../../domain/entities/pedido.entity';
+import { PedidoEntity } from '../../domain/entities/pedido.entity';
 import { PedidoRepositoryPort } from '../../domain/ports/pedido.repository.port';
 import { UsuarioRepositoryPort } from '../../domain/ports/usuario.repository.port';
 import { PaqueteRepositoryPort } from '../../domain/ports/paquete.repository.port';

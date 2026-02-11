@@ -1,5 +1,5 @@
 import { Request, Response } from 'express';
-import { PedidoEntity, EstadoPedido } from '../../domain/entities/pedido.entity';
+import { PedidoEntity } from '../../domain/entities/pedido.entity';
 import { CrearPedidoUseCase } from '../../application/use-cases/crear-pedido.use-case';
 import { ActualizarEstadoPedidoUseCase } from '../../application/use-cases/actualizar-estado-pedido.use-case';
 import { DescargarPedidoZipUseCase } from '../../application/use-cases/descargar-pedido-zip.use-case';
@@ -8,6 +8,7 @@ import { UsuarioRepositoryPort } from '../../domain/ports/usuario.repository.por
 import { PaqueteRepositoryPort } from '../../domain/ports/paquete.repository.port';
 import { FotoRepositoryPort } from '../../domain/ports/foto.repository.port';
 import { ItemsPedidoRepositoryPort } from '../../domain/ports/items-pedido.repository.port';
+import { EstadoPedidoRepositoryPort } from '../../domain/ports/estado-pedido.repository.port';
 
 export class PedidoController {
   constructor(
@@ -18,7 +19,8 @@ export class PedidoController {
     private usuarioRepository: UsuarioRepositoryPort,
     private paqueteRepository: PaqueteRepositoryPort,
     private fotoRepository: FotoRepositoryPort,
-    private itemsPedidoRepository: ItemsPedidoRepositoryPort
+    private itemsPedidoRepository: ItemsPedidoRepositoryPort,
+    private estadoPedidoRepository: EstadoPedidoRepositoryPort
   ) {}
 
   async crearPedido(req: Request, res: Response): Promise<void> {
@@ -168,12 +170,14 @@ export class PedidoController {
     try {
       const { estado } = req.params;
 
-      // Validar que el estado sea uno de los valores permitidos
-      const estadosValidos = Object.values(EstadoPedido);
-      if (!estadosValidos.includes(estado as EstadoPedido)) {
+      // Validar que el estado exista en la BD
+      const estadoValido = await this.estadoPedidoRepository.findByNombre(estado);
+      if (!estadoValido) {
+        const estados = await this.estadoPedidoRepository.findAll(true);
+        const nombresValidos = estados.map(e => e.nombre).join(', ');
         res.status(400).json({
           success: false,
-          message: `Estado no válido. Estados permitidos: ${estadosValidos.join(', ')}`
+          message: `Estado no válido. Estados permitidos: ${nombresValidos}`
         });
         return;
       }
@@ -207,20 +211,18 @@ export class PedidoController {
         return;
       }
 
-      // Validar que el estado sea uno de los valores permitidos
-      const estadosValidos = Object.values(EstadoPedido);
-      if (!estadosValidos.includes(estado as EstadoPedido)) {
+      if (!estado) {
         res.status(400).json({
           success: false,
-          message: `Estado no válido. Estados permitidos: ${estadosValidos.join(', ')}`
+          message: 'El estado es requerido'
         });
         return;
       }
 
-      // Ejecutar el caso de uso de actualización de estado
+      // Ejecutar el caso de uso de actualización de estado (valida contra BD internamente)
       const result = await this.actualizarEstadoPedidoUseCase.execute(
         idNum,
-        estado as EstadoPedido
+        estado
       );
 
       if (result.success) {

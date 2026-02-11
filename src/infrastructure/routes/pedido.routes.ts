@@ -11,6 +11,7 @@ import { SubirFotoUseCase } from '../../application/use-cases/subir-foto.use-cas
 import { S3Service } from '../services/s3.service';
 import { PrismaFotoRepository } from '../repositories/prisma-foto.repository';
 import { PrismaItemsPedidoRepository } from '../repositories/prisma-items-pedido.repository';
+import { PrismaEstadoPedidoRepository } from '../repositories/prisma-estado-pedido.repository';
 import { authenticateToken, requireRole, requireCliente, requireAdmin } from '../middlewares/auth.middleware';
 
 // Configurar multer para memoria
@@ -78,12 +79,13 @@ const pedidoRoutes = (router: Router): void => {
   const paqueteRepository = new PrismaPaqueteRepository();
   const fotoRepository = new PrismaFotoRepository();
   const itemsPedidoRepository = new PrismaItemsPedidoRepository();
+  const estadoPedidoRepository = new PrismaEstadoPedidoRepository();
   const s3Service = new S3Service();
   const crearPedidoUseCase = new CrearPedidoUseCase(pedidoRepository, usuarioRepository, paqueteRepository);
-  const actualizarEstadoPedidoUseCase = new ActualizarEstadoPedidoUseCase(pedidoRepository);
+  const actualizarEstadoPedidoUseCase = new ActualizarEstadoPedidoUseCase(pedidoRepository, estadoPedidoRepository);
   const descargarPedidoZipUseCase = new DescargarPedidoZipUseCase(pedidoRepository, s3Service);
   const subirFotoUseCase = new SubirFotoUseCase(s3Service, usuarioRepository, pedidoRepository, itemsPedidoRepository, paqueteRepository, fotoRepository);
-  const pedidoController = new PedidoController(crearPedidoUseCase, actualizarEstadoPedidoUseCase, descargarPedidoZipUseCase, pedidoRepository, usuarioRepository, paqueteRepository, fotoRepository, itemsPedidoRepository);
+  const pedidoController = new PedidoController(crearPedidoUseCase, actualizarEstadoPedidoUseCase, descargarPedidoZipUseCase, pedidoRepository, usuarioRepository, paqueteRepository, fotoRepository, itemsPedidoRepository, estadoPedidoRepository);
 
   /**
    * @swagger

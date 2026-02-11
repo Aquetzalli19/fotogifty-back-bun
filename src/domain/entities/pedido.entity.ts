@@ -19,16 +19,6 @@ export interface FotoDetalle {
   cantidad_copias?: number;  // Cantidad de copias físicas a imprimir
 }
 
-export enum EstadoPedido {
-  PENDIENTE = 'Pendiente',
-  ENVIADO = 'Enviado',
-  IMPRIMIENDO = 'Imprimiendo',
-  EMPAQUETADO = 'Empaquetado',
-  EN_REPARTO = 'En reparto',
-  ENTREGADO = 'Entregado',
-  ARCHIVADO = 'Archivado'
-}
-
 export enum EstadoPago {
   PENDIENTE = 'pending',
   PAGADO = 'paid',
@@ -49,7 +39,7 @@ export interface Pedido {
   telefono_cliente?: string;
   fecha_pedido: Date;
   items_pedido: ItemPedido[];
-  estado: EstadoPedido;
+  estado: string;
   estado_pago: EstadoPago;
   metodo_entrega: MetodoEntrega; // Método de entrega del pedido
   subtotal: number;
@@ -72,7 +62,7 @@ export class PedidoEntity implements Pedido {
   public telefono_cliente?: string;
   public fecha_pedido: Date;
   public items_pedido: ItemPedido[];
-  public estado: EstadoPedido;
+  public estado: string;
   public estado_pago: EstadoPago;
   public metodo_entrega: MetodoEntrega;
   public subtotal: number;
@@ -96,7 +86,7 @@ export class PedidoEntity implements Pedido {
     id_pago_stripe?: string,
     id_sesion_stripe?: string,
     telefono_cliente?: string,
-    estado: EstadoPedido = EstadoPedido.PENDIENTE,
+    estado: string = 'Pendiente',
     estado_pago: EstadoPago = EstadoPago.PENDIENTE,
     imagenes?: string[],
     id?: number

@@ -1,7 +1,7 @@
 import Stripe from 'stripe';
 import { StripeService } from '../../infrastructure/services/stripe.service';
 import { PedidoRepositoryPort } from '../../domain/ports/pedido.repository.port';
-import { PedidoEntity, EstadoPedido, EstadoPago } from '../../domain/entities/pedido.entity';
+import { PedidoEntity, EstadoPago } from '../../domain/entities/pedido.entity';
 
 interface ProcesarWebhookResult {
   success: boolean;
@@ -104,7 +104,7 @@ export class ProcesarWebhookStripeUseCase {
         session.payment_intent as string || undefined,
         session.id,
         telefono_cliente,
-        EstadoPedido.PENDIENTE,
+        'Pendiente',
         EstadoPago.PAGADO
       );
 

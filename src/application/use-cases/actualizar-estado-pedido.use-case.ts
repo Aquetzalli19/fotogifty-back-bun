@@ -1,5 +1,6 @@
-import { PedidoEntity, EstadoPedido } from '../../domain/entities/pedido.entity';
+import { PedidoEntity } from '../../domain/entities/pedido.entity';
 import { PedidoRepositoryPort } from '../../domain/ports/pedido.repository.port';
+import { EstadoPedidoRepositoryPort } from '../../domain/ports/estado-pedido.repository.port';
 
 interface ActualizarEstadoPedidoResult {
   success: boolean;
@@ -9,19 +10,24 @@ interface ActualizarEstadoPedidoResult {
 }
 
 export class ActualizarEstadoPedidoUseCase {
-  constructor(private readonly pedidoRepository: PedidoRepositoryPort) {}
+  constructor(
+    private readonly pedidoRepository: PedidoRepositoryPort,
+    private readonly estadoPedidoRepository: EstadoPedidoRepositoryPort
+  ) {}
 
   async execute(
     id: number,
-    nuevoEstado: EstadoPedido
+    nuevoEstado: string
   ): Promise<ActualizarEstadoPedidoResult> {
     try {
-      // Validar que el estado sea uno de los valores permitidos
-      const estadosValidos = Object.values(EstadoPedido);
-      if (!estadosValidos.includes(nuevoEstado)) {
+      // Validar que el estado exista en la BD
+      const estadoValido = await this.estadoPedidoRepository.findByNombre(nuevoEstado);
+      if (!estadoValido) {
+        const estados = await this.estadoPedidoRepository.findAll(true);
+        const nombresValidos = estados.map(e => e.nombre).join(', ');
         return {
           success: false,
-          message: `Estado no válido. Estados permitidos: ${estadosValidos.join(', ')}`,
+          message: `Estado no válido. Estados permitidos: ${nombresValidos}`,
           error: 'Estado no válido'
         };
       }

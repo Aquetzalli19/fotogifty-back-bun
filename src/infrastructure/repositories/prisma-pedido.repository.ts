@@ -61,6 +61,12 @@ export class PrismaPedidoRepository implements PedidoRepositoryPort {
   }
 
   async create(pedido: Pedido): Promise<Pedido> {
+    // Buscar estado_id por nombre del estado
+    const estadoDB = await prisma.estados_pedido.findUnique({
+      where: { nombre: pedido.estado || 'Pendiente' }
+    });
+    const estadoId = estadoDB?.id ?? 1;
+
     const pedidoPrisma = await prisma.pedidos.create({
       data: {
         usuario_id: pedido.id_usuario,
@@ -70,14 +76,14 @@ export class PrismaPedidoRepository implements PedidoRepositoryPort {
         email_cliente: pedido.email_cliente,
         telefono_cliente: pedido.telefono_cliente,
         fecha_pedido: pedido.fecha_pedido,
-        estado_personalizado: pedido.estado, // Usando el nuevo nombre del campo
+        estado_personalizado: pedido.estado,
         estado_pago: pedido.estado_pago,
         metodo_entrega: pedido.metodo_entrega,
         subtotal: pedido.subtotal,
         iva: pedido.iva,
         total: pedido.total,
         direccion_id: pedido.id_direccion || null,
-        estado_id: 1, // Valor por defecto
+        estado_id: estadoId,
         items: {
           create: pedido.items_pedido.map(item => ({
             tipo_item: 'paquete',
@@ -211,9 +217,17 @@ export class PrismaPedidoRepository implements PedidoRepositoryPort {
   }
 
   async updateEstado(id: number, estado: string): Promise<Pedido | null> {
+    // Buscar estado_id por nombre para sincronizar ambos campos
+    const estadoDB = await prisma.estados_pedido.findUnique({
+      where: { nombre: estado }
+    });
+
     const pedidoPrisma = await prisma.pedidos.update({
       where: { id },
-      data: { estado_personalizado: estado }, // Usando el nuevo nombre del campo
+      data: {
+        estado_personalizado: estado,
+        ...(estadoDB && { estado_id: estadoDB.id }),
+      },
       include: {
         usuario: true,
         direccion: true,

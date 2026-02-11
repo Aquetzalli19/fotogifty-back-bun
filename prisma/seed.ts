@@ -8,19 +8,19 @@ async function main() {
   // Insertar estados de pedido
   console.log('📦 Insertando estados de pedido...');
   const estadosPedido = [
-    { id: 1, nombre: 'Pendiente', descripcion: 'Pedido recibido, en espera de procesamiento' },
-    { id: 2, nombre: 'Enviado', descripcion: 'Pedido enviado al cliente' },
-    { id: 3, nombre: 'Imprimiendo', descripcion: 'Las fotos están siendo impresas' },
-    { id: 4, nombre: 'Empaquetado', descripcion: 'El pedido está siendo empaquetado' },
-    { id: 5, nombre: 'En reparto', descripcion: 'El pedido está en camino al cliente' },
-    { id: 6, nombre: 'Entregado', descripcion: 'Pedido entregado al cliente' },
-    { id: 7, nombre: 'Archivado', descripcion: 'Pedido archivado' },
+    { id: 1, nombre: 'Pendiente', descripcion: 'Pedido recibido, en espera de procesamiento', color: '#FFC107', orden: 1, activo: true },
+    { id: 2, nombre: 'Imprimiendo', descripcion: 'Las fotos están siendo impresas', color: '#2196F3', orden: 2, activo: true },
+    { id: 3, nombre: 'Empaquetado', descripcion: 'El pedido está siendo empaquetado', color: '#9C27B0', orden: 3, activo: true },
+    { id: 4, nombre: 'Enviado', descripcion: 'Pedido enviado al cliente', color: '#FF9800', orden: 4, activo: true },
+    { id: 5, nombre: 'En reparto', descripcion: 'El pedido está en camino al cliente', color: '#03A9F4', orden: 5, activo: true },
+    { id: 6, nombre: 'Entregado', descripcion: 'Pedido entregado al cliente', color: '#4CAF50', orden: 6, activo: true },
+    { id: 7, nombre: 'Archivado', descripcion: 'Pedido archivado', color: '#9E9E9E', orden: 7, activo: true },
   ];
 
   for (const estado of estadosPedido) {
     await prisma.estados_pedido.upsert({
       where: { id: estado.id },
-      update: {},
+      update: { color: estado.color, orden: estado.orden, activo: estado.activo },
       create: estado,
     });
   }
