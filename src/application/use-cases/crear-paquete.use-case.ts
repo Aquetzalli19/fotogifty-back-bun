@@ -26,7 +26,8 @@ export class CrearPaqueteUseCase {
     ancho_foto?: number,
     alto_foto?: number,
     imagen_url?: string,
-    template_url?: string
+    template_url?: string,
+    templates_calendario?: Record<string, string>
   ): Promise<CrearPaqueteResult> {
     try {
       // Validar que el nombre no esté vacío
@@ -80,7 +81,8 @@ export class CrearPaqueteUseCase {
         ancho_foto,
         alto_foto,
         imagen_url,
-        template_url
+        template_url,
+        templates_calendario
       );
 
       // Guardar en la base de datos

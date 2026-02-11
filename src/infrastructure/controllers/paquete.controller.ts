@@ -97,6 +97,44 @@ export class PaqueteController {
         templateUrl = await this.s3Service.uploadFile(templateFile, key);
       }
 
+      // Procesar templates de calendario (template_mes_1 a template_mes_12)
+      let calendarTemplates: Record<string, string> | undefined = undefined;
+      const dpi = parsedResolucionFoto || 300;
+      let firstDimensions: { width: number; height: number } | null = null;
+
+      for (let mes = 1; mes <= 12; mes++) {
+        const file = files?.[`template_mes_${mes}`]?.[0];
+        if (!file) continue;
+
+        if (file.mimetype !== 'image/png') {
+          res.status(400).json({
+            success: false,
+            message: `El template del mes ${mes} debe ser un archivo PNG`
+          });
+          return;
+        }
+
+        const metadata = await sharp(file.buffer).metadata();
+
+        if (!firstDimensions) {
+          firstDimensions = { width: metadata.width!, height: metadata.height! };
+          parsedAnchoFoto = metadata.width! / dpi;
+          parsedAltoFoto = metadata.height! / dpi;
+        } else {
+          if (metadata.width !== firstDimensions.width || metadata.height !== firstDimensions.height) {
+            res.status(400).json({
+              success: false,
+              message: `El template del mes ${mes} tiene dimensiones diferentes (${metadata.width}x${metadata.height}) al mes de referencia (${firstDimensions.width}x${firstDimensions.height})`
+            });
+            return;
+          }
+        }
+
+        const key = `templates/calendario-mes${mes}-${Date.now()}.png`;
+        if (!calendarTemplates) calendarTemplates = {};
+        calendarTemplates[mes.toString()] = await this.s3Service.uploadFile(file, key);
+      }
+
       // Ejecutar el caso de uso
       const result = await this.crearPaqueteUseCase.execute(
         nombre.trim(),
@@ -109,7 +147,8 @@ export class PaqueteController {
         parsedAnchoFoto,
         parsedAltoFoto,
         imagenUrl,
-        templateUrl
+        templateUrl,
+        calendarTemplates
       );
 
       if (result.success) {
@@ -304,6 +343,44 @@ export class PaqueteController {
         templateUrl = await this.s3Service.uploadFile(templateFile, key);
       }
 
+      // Procesar templates de calendario (template_mes_1 a template_mes_12)
+      let calendarTemplates: Record<string, string> | undefined = undefined;
+      const dpi = parsedResolucionFoto || 300;
+      let firstDimensions: { width: number; height: number } | null = null;
+
+      for (let mes = 1; mes <= 12; mes++) {
+        const file = files?.[`template_mes_${mes}`]?.[0];
+        if (!file) continue;
+
+        if (file.mimetype !== 'image/png') {
+          res.status(400).json({
+            success: false,
+            message: `El template del mes ${mes} debe ser un archivo PNG`
+          });
+          return;
+        }
+
+        const metadata = await sharp(file.buffer).metadata();
+
+        if (!firstDimensions) {
+          firstDimensions = { width: metadata.width!, height: metadata.height! };
+          parsedAnchoFoto = metadata.width! / dpi;
+          parsedAltoFoto = metadata.height! / dpi;
+        } else {
+          if (metadata.width !== firstDimensions.width || metadata.height !== firstDimensions.height) {
+            res.status(400).json({
+              success: false,
+              message: `El template del mes ${mes} tiene dimensiones diferentes (${metadata.width}x${metadata.height}) al mes de referencia (${firstDimensions.width}x${firstDimensions.height})`
+            });
+            return;
+          }
+        }
+
+        const key = `templates/calendario-mes${mes}-${Date.now()}.png`;
+        if (!calendarTemplates) calendarTemplates = {};
+        calendarTemplates[mes.toString()] = await this.s3Service.uploadFile(file, key);
+      }
+
       // Ejecutar el caso de uso de actualización
       const result = await this.actualizarPaqueteUseCase.execute(
         idNum,
@@ -317,7 +394,8 @@ export class PaqueteController {
         parsedAnchoFoto,
         parsedAltoFoto,
         imagenUrl,
-        templateUrl
+        templateUrl,
+        calendarTemplates
       );
 
       if (result.success) {

@@ -18,7 +18,7 @@ import { S3Service } from '../services/s3.service';
 const upload = multer({
   storage: multer.memoryStorage(),
   limits: {
-    fileSize: 5 * 1024 * 1024, // 5MB
+    fileSize: 10 * 1024 * 1024, // 10MB
   },
   fileFilter: (req, file, cb) => {
     if (file.mimetype.startsWith('image/')) {
@@ -35,7 +35,7 @@ const handleMulterError = (err: any, req: any, res: any, next: any) => {
     if (err.code === 'LIMIT_FILE_SIZE') {
       return res.status(400).json({
         success: false,
-        message: 'El archivo es demasiado grande. Máximo permitido: 5MB.'
+        message: 'El archivo es demasiado grande. Máximo permitido: 10MB.'
       });
     }
     return res.status(400).json({
@@ -145,7 +145,13 @@ const paqueteRoutes = (router: Router): void => {
    *       500:
    *         description: Error interno del servidor
    */
-  router.post('/paquetes', upload.fields([{ name: 'imagen', maxCount: 1 }, { name: 'template', maxCount: 1 }]), handleMulterError, (req, res) =>
+  const uploadFields = [
+    { name: 'imagen', maxCount: 1 },
+    { name: 'template', maxCount: 1 },
+    ...Array.from({ length: 12 }, (_, i) => ({ name: `template_mes_${i + 1}`, maxCount: 1 }))
+  ];
+
+  router.post('/paquetes', upload.fields(uploadFields), handleMulterError, (req, res) =>
     paqueteController.crearPaquete(req, res)
   );
 
@@ -304,7 +310,7 @@ const paqueteRoutes = (router: Router): void => {
    *       500:
    *         description: Error interno del servidor
    */
-  router.put('/paquetes/:id', upload.fields([{ name: 'imagen', maxCount: 1 }, { name: 'template', maxCount: 1 }]), handleMulterError, (req, res) =>
+  router.put('/paquetes/:id', upload.fields(uploadFields), handleMulterError, (req, res) =>
     paqueteController.updatePaquete(req, res)
   );
 

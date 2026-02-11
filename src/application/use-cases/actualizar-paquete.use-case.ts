@@ -27,7 +27,8 @@ export class ActualizarPaqueteUseCase {
     ancho_foto?: number,
     alto_foto?: number,
     imagen_url?: string,
-    template_url?: string
+    template_url?: string,
+    templates_calendario?: Record<string, string>
   ): Promise<ActualizarPaqueteResult> {
     try {
       // Verificar si el paquete existe
@@ -132,7 +133,10 @@ export class ActualizarPaqueteUseCase {
         ancho_foto: ancho_foto !== undefined ? ancho_foto : paqueteExistente.ancho_foto,
         alto_foto: alto_foto !== undefined ? alto_foto : paqueteExistente.alto_foto,
         imagen_url: imagen_url !== undefined ? imagen_url : paqueteExistente.imagen_url,
-        template_url: template_url !== undefined ? template_url : paqueteExistente.template_url
+        template_url: template_url !== undefined ? template_url : paqueteExistente.template_url,
+        templates_calendario: templates_calendario !== undefined
+          ? { ...(paqueteExistente.templates_calendario || {}), ...templates_calendario }
+          : paqueteExistente.templates_calendario
       };
 
       const paqueteGuardado = await this.paqueteRepository.update(paqueteActualizado);

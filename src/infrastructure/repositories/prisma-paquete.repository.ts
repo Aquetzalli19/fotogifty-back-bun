@@ -111,7 +111,12 @@ export class PrismaPaqueteRepository implements PaqueteRepositoryPort {
       ancho_foto: Number(prismaPaquete.ancho_foto),
       alto_foto: Number(prismaPaquete.alto_foto),
       imagen_url: prismaPaquete.imagen_url,
-      template_url: prismaPaquete.template_url
+      template_url: prismaPaquete.template_url,
+      templates_calendario: prismaPaquete.templates_calendario
+        ? (typeof prismaPaquete.templates_calendario === 'string'
+          ? JSON.parse(prismaPaquete.templates_calendario)
+          : prismaPaquete.templates_calendario)
+        : undefined
     };
   }
 
@@ -128,7 +133,8 @@ export class PrismaPaqueteRepository implements PaqueteRepositoryPort {
       ancho_foto: paquete.ancho_foto,
       alto_foto: paquete.alto_foto,
       imagen_url: paquete.imagen_url || null,
-      template_url: paquete.template_url || null
+      template_url: paquete.template_url || null,
+      templates_calendario: paquete.templates_calendario || null
     };
   }
 }
