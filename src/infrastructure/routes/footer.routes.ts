@@ -238,6 +238,58 @@ const footerRoutes = (router: Router): void => {
 
   /**
    * @swagger
+   * /api/footer/social-links/reorder:
+   *   put:
+   *     summary: Reordenar enlaces sociales (solo administradores)
+   *     tags: [Footer]
+   *     security:
+   *       - bearerAuth: []
+   *     requestBody:
+   *       required: true
+   *       content:
+   *         application/json:
+   *           schema:
+   *             type: object
+   *             required:
+   *               - ids
+   *             properties:
+   *               ids:
+   *                 type: array
+   *                 items:
+   *                   type: integer
+   *                 example: [3, 1, 2, 5, 4]
+   *                 description: Array de IDs en el orden deseado. El índice en el array se convierte en el campo 'orden'.
+   *     responses:
+   *       200:
+   *         description: Orden actualizado exitosamente
+   *         content:
+   *           application/json:
+   *             schema:
+   *               type: object
+   *               properties:
+   *                 success:
+   *                   type: boolean
+   *                   example: true
+   *                 message:
+   *                   type: string
+   *                   example: "Orden actualizado exitosamente"
+   *       400:
+   *         description: Datos inválidos
+   *       401:
+   *         description: No autenticado
+   *       403:
+   *         description: No autorizado
+   *       404:
+   *         description: Uno o más enlaces no encontrados
+   *       500:
+   *         description: Error interno del servidor
+   */
+  router.put('/footer/social-links/reorder', authenticateToken, requireAdmin, (req, res) =>
+    footerController.reorderSocialLinks(req, res)
+  );
+
+  /**
+   * @swagger
    * /api/footer/social-links/{id}:
    *   put:
    *     summary: Actualizar enlace de red social (solo administradores)
@@ -329,58 +381,6 @@ const footerRoutes = (router: Router): void => {
    */
   router.delete('/footer/social-links/:id', authenticateToken, requireAdmin, (req, res) =>
     footerController.deleteSocialLink(req, res)
-  );
-
-  /**
-   * @swagger
-   * /api/footer/social-links/reorder:
-   *   put:
-   *     summary: Reordenar enlaces sociales (solo administradores)
-   *     tags: [Footer]
-   *     security:
-   *       - bearerAuth: []
-   *     requestBody:
-   *       required: true
-   *       content:
-   *         application/json:
-   *           schema:
-   *             type: object
-   *             required:
-   *               - ids
-   *             properties:
-   *               ids:
-   *                 type: array
-   *                 items:
-   *                   type: integer
-   *                 example: [3, 1, 2, 5, 4]
-   *                 description: Array de IDs en el orden deseado. El índice en el array se convierte en el campo 'orden'.
-   *     responses:
-   *       200:
-   *         description: Orden actualizado exitosamente
-   *         content:
-   *           application/json:
-   *             schema:
-   *               type: object
-   *               properties:
-   *                 success:
-   *                   type: boolean
-   *                   example: true
-   *                 message:
-   *                   type: string
-   *                   example: "Orden actualizado exitosamente"
-   *       400:
-   *         description: Datos inválidos
-   *       401:
-   *         description: No autenticado
-   *       403:
-   *         description: No autorizado
-   *       404:
-   *         description: Uno o más enlaces no encontrados
-   *       500:
-   *         description: Error interno del servidor
-   */
-  router.put('/footer/social-links/reorder', authenticateToken, requireAdmin, (req, res) =>
-    footerController.reorderSocialLinks(req, res)
   );
 };
 
