@@ -2,6 +2,11 @@ import Stripe from 'stripe';
 import { StripeService } from '../../infrastructure/services/stripe.service';
 import { PedidoRepositoryPort } from '../../domain/ports/pedido.repository.port';
 import { PedidoEntity, EstadoPago } from '../../domain/entities/pedido.entity';
+import { CustomizacionTemporalRepositoryPort } from '@domain/ports/customizacion-temporal.repository.port';
+import { FotoRepositoryPort } from '@domain/ports/foto.repository.port';
+import { ProcesarPolaroidCustomizationUseCase } from './procesar-polaroid-customization.use-case';
+import { ProcesarCalendarCustomizationUseCase } from './procesar-calendar-customization.use-case';
+import prisma from '@infrastructure/database/prisma.client';
 
 interface ProcesarWebhookResult {
   success: boolean;
@@ -12,7 +17,9 @@ interface ProcesarWebhookResult {
 export class ProcesarWebhookStripeUseCase {
   constructor(
     private readonly stripeService: StripeService,
-    private readonly pedidoRepository: PedidoRepositoryPort
+    private readonly pedidoRepository: PedidoRepositoryPort,
+    private readonly customizacionRepository: CustomizacionTemporalRepositoryPort,
+    private readonly fotoRepository: FotoRepositoryPort
   ) {}
 
   async execute(payload: string | Buffer, signature: string): Promise<ProcesarWebhookResult> {
@@ -112,6 +119,9 @@ export class ProcesarWebhookStripeUseCase {
 
       console.log(`Pedido creado exitosamente: ${pedidoCreado.id} para session_id: ${session.id}`);
 
+      // ✅ NUEVO: Procesar customizaciones de polaroids y calendarios
+      await this.procesarCustomizaciones(pedidoCreado, id_usuario);
+
       return {
         success: true,
         message: `Pedido ${pedidoCreado.id} creado exitosamente`
@@ -142,5 +152,140 @@ export class ProcesarWebhookStripeUseCase {
       success: true,
       message: 'Pago fallido procesado'
     };
+  }
+
+  /**
+   * Procesa customizaciones de polaroids y calendarios después de crear el pedido
+   */
+  private async procesarCustomizaciones(pedidoCreado: PedidoEntity, usuarioId: number): Promise<void> {
+    try {
+      console.log(`🎨 Iniciando procesamiento de customizaciones para usuario ${usuarioId}...`);
+
+      // 1. Obtener customizaciones temporales del usuario
+      const customizaciones = await this.customizacionRepository.findByUserId(usuarioId);
+
+      if (!customizaciones || customizaciones.length === 0) {
+        console.log('No hay customizaciones para procesar');
+        return;
+      }
+
+      console.log(`Encontradas ${customizaciones.length} customizaciones para procesar`);
+
+      // 2. Inicializar use cases de procesamiento
+      const procesarPolaroidUseCase = new ProcesarPolaroidCustomizationUseCase();
+      const procesarCalendarUseCase = new ProcesarCalendarCustomizationUseCase();
+
+      // 3. Procesar cada customización según su tipo
+      for (const customizacion of customizaciones) {
+        try {
+          // Encontrar el item_pedido correspondiente
+          const itemPedido = pedidoCreado.items?.find(item =>
+            item.cart_item_id === customizacion.cart_item_id &&
+            item.instance_index === customizacion.instance_index
+          );
+
+          if (!itemPedido || !itemPedido.id) {
+            console.warn(`⚠️ No se encontró item_pedido para customizacion ${customizacion.id}`);
+            continue;
+          }
+
+          // ✅ PROCESAR POLAROIDS
+          if (customizacion.editor_type === 'polaroid') {
+            console.log(`📸 Procesando polaroid para item ${itemPedido.id}...`);
+
+            const result = await procesarPolaroidUseCase.execute(
+              customizacion.datos,
+              pedidoCreado.id!,
+              itemPedido.id
+            );
+
+            if (result.success && result.data) {
+              // Crear registro de foto por cada polaroid procesado
+              for (const imagen of result.data.processedImages) {
+                await this.fotoRepository.create({
+                  usuario_id: usuarioId,
+                  pedido_id: pedidoCreado.id!,
+                  item_pedido_id: itemPedido.id,
+                  nombre_archivo: `polaroid_${Date.now()}.png`,
+                  ruta_almacenamiento: imagen.s3Key,  // Guardar KEY, no URL
+                  tamaño_archivo: 0,
+                  ancho_foto: customizacion.datos.widthInches || 4,
+                  alto_foto: customizacion.datos.heightInches || 6,
+                  resolucion_foto: 300,
+                  cantidad_copias: imagen.copies,
+                  procesada: true
+                });
+
+                console.log(`✅ Polaroid procesado: ${imagen.copies} copias`);
+              }
+            } else {
+              console.error(`❌ Error procesando polaroid: ${result.message}`);
+            }
+          }
+
+          // ✅ PROCESAR CALENDARIOS
+          else if (customizacion.editor_type === 'calendar') {
+            console.log(`📅 Procesando calendario para item ${itemPedido.id}...`);
+
+            const result = await procesarCalendarUseCase.execute(
+              customizacion.datos,
+              pedidoCreado.id!,
+              itemPedido.id
+            );
+
+            if (result.success && result.data) {
+              // Crear registro de foto por cada mes procesado
+              for (const month of result.data.processedMonths) {
+                const foto = await this.fotoRepository.create({
+                  usuario_id: usuarioId,
+                  pedido_id: pedidoCreado.id!,
+                  item_pedido_id: itemPedido.id,
+                  nombre_archivo: `calendar_month_${month.month}.png`,
+                  ruta_almacenamiento: month.s3Key,  // Guardar KEY, no URL
+                  tamaño_archivo: 0,
+                  ancho_foto: customizacion.datos.widthInches || 8.5,
+                  alto_foto: customizacion.datos.heightInches || 11,
+                  resolucion_foto: 300,
+                  cantidad_copias: 1,
+                  procesada: true
+                });
+
+                // Crear relación mes-foto en tabla calendario_fotos
+                await prisma.calendario_fotos.create({
+                  data: {
+                    pedido_id: pedidoCreado.id!,
+                    item_pedido_id: itemPedido.id,
+                    mes: month.month,
+                    foto_id: foto.id!
+                  }
+                });
+
+                console.log(`✅ Mes ${month.month} de calendario procesado: foto ${foto.id}`);
+              }
+            } else {
+              console.error(`❌ Error procesando calendario: ${result.message}`);
+            }
+          }
+
+        } catch (error: any) {
+          // No lanzar error para no bloquear el webhook
+          console.error(`Error procesando customización ${customizacion.id}:`, error.message);
+        }
+      }
+
+      // 4. Limpiar customizaciones temporales después de procesar
+      try {
+        await this.customizacionRepository.deleteByUserId(usuarioId);
+        console.log(`✅ Customizaciones temporales limpiadas para usuario ${usuarioId}`);
+      } catch (error: any) {
+        console.warn('⚠️ Error limpiando customizaciones temporales:', error.message);
+      }
+
+      console.log(`✅ Procesamiento de customizaciones completado para pedido ${pedidoCreado.id}`);
+
+    } catch (error: any) {
+      // No lanzar error para no bloquear la creación del pedido
+      console.error('❌ Error general procesando customizaciones:', error.message);
+    }
   }
 }

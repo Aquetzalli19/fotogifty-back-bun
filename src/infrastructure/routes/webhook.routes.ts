@@ -3,16 +3,22 @@ import { WebhookController } from '../controllers/webhook.controller';
 import { ProcesarWebhookStripeUseCase } from '../../application/use-cases/procesar-webhook-stripe.use-case';
 import { StripeService } from '../services/stripe.service';
 import { PrismaPedidoRepository } from '../repositories/prisma-pedido.repository';
+import { PrismaCustomizacionTemporalRepository } from '../repositories/prisma-customizacion-temporal.repository';
+import { PrismaFotoRepository } from '../repositories/prisma-foto.repository';
 
 const webhookRoutes = (router: Router): void => {
   // Inicializar dependencias
   const stripeService = new StripeService();
   const pedidoRepository = new PrismaPedidoRepository();
+  const customizacionRepository = new PrismaCustomizacionTemporalRepository();
+  const fotoRepository = new PrismaFotoRepository();
 
   // Inicializar caso de uso
   const procesarWebhookStripeUseCase = new ProcesarWebhookStripeUseCase(
     stripeService,
-    pedidoRepository
+    pedidoRepository,
+    customizacionRepository,
+    fotoRepository
   );
 
   // Inicializar controlador
