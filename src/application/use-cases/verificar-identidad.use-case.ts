@@ -34,9 +34,11 @@ export class VerificarIdentidadUseCase {
 
       // Verificar que el usuario existe y que el teléfono coincide
       // IMPORTANTE: Usar el mismo mensaje genérico para evitar enumeración de usuarios
-      // Normalizar: si el teléfono guardado no tiene código de país, agregar +52
-      const telefonoDb = usuario?.telefono?.startsWith('+') ? usuario.telefono : `+52${usuario?.telefono}`;
-      if (!usuario || telefonoDb !== telefono) {
+      // Normalizar ambos teléfonos a solo dígitos para comparar
+      const normalizarTelefono = (t: string) => t.replace(/\D/g, '').slice(-10);
+      const telefonoNormalizado = normalizarTelefono(telefono);
+      const telefonoDbNormalizado = usuario?.telefono ? normalizarTelefono(usuario.telefono) : '';
+      if (!usuario || telefonoNormalizado !== telefonoDbNormalizado) {
         return {
           success: false,
           message: 'Los datos no coinciden con nuestros registros'

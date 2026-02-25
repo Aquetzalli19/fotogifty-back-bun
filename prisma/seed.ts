@@ -45,6 +45,48 @@ async function main() {
   }
   console.log('✅ Tipos de paquete insertados');
 
+  // Insertar configuración del footer (singleton)
+  console.log('🦶 Insertando configuración del footer...');
+  const footerConfig = await prisma.footer_config.upsert({
+    where: { id: 1 },
+    update: {},
+    create: {
+      id: 1,
+      descripcion: null,
+      email: null,
+      telefono: null,
+    },
+  });
+  console.log('✅ Configuración del footer insertada');
+
+  // Insertar enlaces sociales de ejemplo
+  console.log('🔗 Insertando enlaces sociales de ejemplo...');
+  const socialLinks = [
+    { plataforma: 'instagram', url: 'https://instagram.com/fotogifty', orden: 0, activo: true },
+    { plataforma: 'facebook', url: 'https://facebook.com/fotogifty', orden: 1, activo: true },
+    { plataforma: 'whatsapp', url: 'https://wa.me/5512345678', orden: 2, activo: true },
+  ];
+
+  for (const link of socialLinks) {
+    await prisma.social_links.upsert({
+      where: {
+        footer_config_id_plataforma: {
+          footer_config_id: footerConfig.id,
+          plataforma: link.plataforma as any,
+        },
+      },
+      update: {},
+      create: {
+        footer_config_id: footerConfig.id,
+        plataforma: link.plataforma as any,
+        url: link.url,
+        orden: link.orden,
+        activo: link.activo,
+      },
+    });
+  }
+  console.log('✅ Enlaces sociales insertados');
+
   console.log('🎉 ¡Datos iniciales sembrados exitosamente!');
 }
 

@@ -21,7 +21,7 @@ export class RecuperarPasswordUseCase {
         };
       }
 
-      const telefonoRegex = /^[0-9]{10,}$/;
+      const telefonoRegex = /^\+?[0-9]{10,}$/;
       if (!telefonoRegex.test(telefono)) {
         return {
           success: false,
@@ -32,8 +32,11 @@ export class RecuperarPasswordUseCase {
       // Buscar usuario
       const usuario = await this.usuarioRepository.findByEmail(email);
 
-      // Verificar identidad (mismo mensaje genérico para seguridad)
-      if (!usuario || usuario.telefono !== telefono) {
+      // Verificar identidad — normalizar ambos teléfonos a últimos 10 dígitos
+      const normalizarTelefono = (t: string) => t.replace(/\D/g, '').slice(-10);
+      const telefonoNormalizado = normalizarTelefono(telefono);
+      const telefonoDbNormalizado = usuario?.telefono ? normalizarTelefono(usuario.telefono) : '';
+      if (!usuario || telefonoNormalizado !== telefonoDbNormalizado) {
         return {
           success: false,
           message: 'Los datos no coinciden con nuestros registros'

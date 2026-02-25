@@ -380,3 +380,37 @@ model imagenes_temporales {
   @@index([usuario_id], map: "idx_imagenes_usuario")
   @@index([expires_at], map: "idx_imagenes_expires")
 }
+
+enum PlataformaSocial {
+  instagram
+  facebook
+  whatsapp
+  tiktok
+  twitter
+  youtube
+}
+
+model footer_config {
+  id            Int            @id @default(autoincrement())
+  descripcion   String?        @db.Text
+  email         String?        @db.VarChar(255)
+  telefono      String?        @db.VarChar(50)
+  created_at    DateTime       @default(now())
+  updated_at    DateTime       @default(now()) @updatedAt
+  social_links  social_links[]
+}
+
+model social_links {
+  id                Int               @id @default(autoincrement())
+  footer_config_id  Int
+  plataforma        PlataformaSocial
+  url               String            @db.VarChar(500)
+  orden             Int               @default(0)
+  activo            Boolean           @default(true)
+  created_at        DateTime          @default(now())
+  updated_at        DateTime          @default(now()) @updatedAt
+  footer_config     footer_config     @relation(fields: [footer_config_id], references: [id], onDelete: Cascade)
+
+  @@unique([footer_config_id, plataforma], map: "unique_platform")
+  @@index([footer_config_id], map: "idx_social_links_footer")
+}

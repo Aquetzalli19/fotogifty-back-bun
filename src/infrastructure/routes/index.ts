@@ -21,6 +21,7 @@ import configuracionTiendaRoutes from './configuracion-tienda.routes';
 import landingContentRoutes from './landing-content.routes';
 import carritoTemporalRoutes from './carrito-temporal.routes';
 import estadoPedidoRoutes from './estado-pedido.routes';
+import footerRoutes from './footer.routes';
 
 const configureRoutes = (): Router => {
   const router = Router();
@@ -51,6 +52,7 @@ const configureRoutes = (): Router => {
   landingContentRoutes(apiRouter);
   carritoTemporalRoutes(apiRouter);
   estadoPedidoRoutes(apiRouter);
+  footerRoutes(apiRouter);
   router.use('/api', apiRouter);
 
   return router;
