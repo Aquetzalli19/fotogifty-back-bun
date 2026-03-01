@@ -57,7 +57,7 @@ export class SubirImagenTemporalUseCase {
         file.originalname,
         file.mimetype,
         file.size,
-        7  // Expira en 7 días
+        3650  // 10 años — efectivamente permanente
       );
 
       const imagenGuardada = await this.imagenTemporalRepository.save(nuevaImagen);

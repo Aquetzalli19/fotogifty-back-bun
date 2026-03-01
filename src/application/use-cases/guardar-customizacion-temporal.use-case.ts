@@ -12,6 +12,10 @@ export class GuardarCustomizacionTemporalUseCase {
     private readonly customizacionTemporalRepository: CustomizacionTemporalRepositoryPort
   ) {}
 
+  private containsBase64Image(data: any): boolean {
+    return /"imageSrc"\s*:\s*"data:/.test(JSON.stringify(data));
+  }
+
   async execute(
     usuarioId: number,
     cartItemId: string,
@@ -65,6 +69,14 @@ export class GuardarCustomizacionTemporalUseCase {
           success: false,
           message: 'Datos de customización inválidos para el tipo de editor',
           error: 'Datos de customización inválidos para el tipo de editor'
+        };
+      }
+
+      if (this.containsBase64Image(datos)) {
+        return {
+          success: false,
+          message: 'imageSrc debe ser una URL de S3, no un data URL',
+          error: 'VALIDATION_ERROR'
         };
       }
 

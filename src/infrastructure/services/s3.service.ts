@@ -1,4 +1,4 @@
-import { S3Client, PutObjectCommand, GetObjectCommand, type ObjectCannedACL } from '@aws-sdk/client-s3';
+import { S3Client, PutObjectCommand, GetObjectCommand, DeleteObjectCommand, type ObjectCannedACL } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 
 export class S3Service {
@@ -114,6 +114,22 @@ export class S3Service {
     }
 
     return Buffer.concat(chunks);
+  }
+
+  /**
+   * Genera una URL firmada para que el cliente haga PUT directo a S3
+   */
+  async generatePresignedPutUrl(key: string, contentType: string, expiresIn = 3600): Promise<string> {
+    const command = new PutObjectCommand({ Bucket: this.bucketName, Key: key, ContentType: contentType });
+    return getSignedUrl(this.s3Client, command, { expiresIn });
+  }
+
+  /**
+   * Elimina un objeto de S3. No lanza error si el objeto no existe.
+   */
+  async deleteObject(key: string): Promise<void> {
+    const command = new DeleteObjectCommand({ Bucket: this.bucketName, Key: key });
+    await this.s3Client.send(command);
   }
 
   /**

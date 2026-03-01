@@ -15,6 +15,8 @@ import { SubirImagenTemporalUseCase } from '@application/use-cases/subir-imagen-
 import { ObtenerUrlImagenTemporalUseCase } from '@application/use-cases/obtener-url-imagen-temporal.use-case';
 import { EliminarImagenTemporalUseCase } from '@application/use-cases/eliminar-imagen-temporal.use-case';
 import { EliminarTodasImagenesTemporalesUseCase } from '@application/use-cases/eliminar-todas-imagenes-temporales.use-case';
+import { GenerarPresignedUrlUseCase } from '@application/use-cases/generar-presigned-url.use-case';
+import { EliminarImagenTemporalPorKeyUseCase } from '@application/use-cases/eliminar-imagen-temporal-por-key.use-case';
 import { PrismaCarritoTemporalRepository } from '@infrastructure/repositories/prisma-carrito-temporal.repository';
 import { PrismaCustomizacionTemporalRepository } from '@infrastructure/repositories/prisma-customizacion-temporal.repository';
 import { PrismaImagenTemporalRepository } from '@infrastructure/repositories/prisma-imagen-temporal.repository';
@@ -65,6 +67,8 @@ const carritoTemporalRoutes = (router: Router): void => {
   const obtenerUrlImagenUseCase = new ObtenerUrlImagenTemporalUseCase(imagenRepo, s3Service);
   const eliminarImagenUseCase = new EliminarImagenTemporalUseCase(imagenRepo);
   const eliminarTodasImagenesUseCase = new EliminarTodasImagenesTemporalesUseCase(imagenRepo);
+  const generarPresignedUrlUseCase = new GenerarPresignedUrlUseCase(imagenRepo, s3Service);
+  const eliminarImagenPorKeyUseCase = new EliminarImagenTemporalPorKeyUseCase(imagenRepo, s3Service);
 
   // Controllers
   const carritoController = new CarritoTemporalController(
@@ -85,7 +89,9 @@ const carritoTemporalRoutes = (router: Router): void => {
     subirImagenUseCase,
     obtenerUrlImagenUseCase,
     eliminarImagenUseCase,
-    eliminarTodasImagenesUseCase
+    eliminarTodasImagenesUseCase,
+    generarPresignedUrlUseCase,
+    eliminarImagenPorKeyUseCase
   );
 
   // ============================================
@@ -332,6 +338,106 @@ const carritoTemporalRoutes = (router: Router): void => {
   // ============================================
   // IMÁGENES TEMPORALES
   // ============================================
+
+  /**
+   * @swagger
+   * /api/images/temp/presigned-url:
+   *   post:
+   *     summary: Generar URL prefirmada para subida directa a S3
+   *     description: >
+   *       Genera una presigned PUT URL para que el cliente suba la imagen directamente a S3.
+   *       Crea el registro en la base de datos con la URL pública conocida.
+   *       El cliente debe luego hacer PUT a uploadUrl con el header Content-Type correcto.
+   *     tags: [Carrito Temporal]
+   *     security:
+   *       - bearerAuth: []
+   *     requestBody:
+   *       required: true
+   *       content:
+   *         application/json:
+   *           schema:
+   *             type: object
+   *             required: [filename, contentType, sizeBytes]
+   *             properties:
+   *               filename:
+   *                 type: string
+   *                 example: foto.jpg
+   *               contentType:
+   *                 type: string
+   *                 enum: [image/jpeg, image/png, image/webp, image/heic]
+   *               sizeBytes:
+   *                 type: integer
+   *                 minimum: 1
+   *                 maximum: 25000000
+   *                 example: 2048000
+   *     responses:
+   *       200:
+   *         description: URL prefirmada generada exitosamente
+   *         content:
+   *           application/json:
+   *             schema:
+   *               type: object
+   *               properties:
+   *                 success:
+   *                   type: boolean
+   *                 data:
+   *                   type: object
+   *                   properties:
+   *                     uploadUrl:
+   *                       type: string
+   *                       description: URL prefirmada para hacer PUT directo a S3 (expira en 1 hora)
+   *                     s3Key:
+   *                       type: string
+   *                       example: temp/123/1700000000000-uuid.jpg
+   *                     publicUrl:
+   *                       type: string
+   *                       description: URL pública del objeto una vez subido
+   *                     expiresAt:
+   *                       type: string
+   *                       format: date-time
+   *       400:
+   *         description: contentType no permitido o sizeBytes fuera de rango
+   *       401:
+   *         description: No autenticado
+   */
+  router.post('/images/temp/presigned-url', authenticateToken, (req, res) =>
+    imagenController.generarPresignedUrl(req, res)
+  );
+
+  /**
+   * @swagger
+   * /api/images/temp/by-key:
+   *   delete:
+   *     summary: Eliminar imagen temporal por clave S3
+   *     description: >
+   *       Elimina el objeto de S3 y su registro en la base de datos usando la s3Key.
+   *       La clave debe pertenecer al usuario autenticado (validado por prefijo temp/{userId}/).
+   *       Es idempotente: no falla si el objeto ya no existe en S3 o en DB.
+   *     tags: [Carrito Temporal]
+   *     security:
+   *       - bearerAuth: []
+   *     requestBody:
+   *       required: true
+   *       content:
+   *         application/json:
+   *           schema:
+   *             type: object
+   *             required: [s3Key]
+   *             properties:
+   *               s3Key:
+   *                 type: string
+   *                 example: temp/123/1700000000000-uuid.jpg
+   *     responses:
+   *       200:
+   *         description: Imagen eliminada correctamente
+   *       401:
+   *         description: No autenticado
+   *       403:
+   *         description: La clave no pertenece al usuario autenticado
+   */
+  router.delete('/images/temp/by-key', authenticateToken, (req, res) =>
+    imagenController.eliminarPorKey(req, res)
+  );
 
   /**
    * @swagger
