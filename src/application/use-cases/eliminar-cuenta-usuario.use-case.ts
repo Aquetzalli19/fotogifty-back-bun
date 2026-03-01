@@ -28,7 +28,10 @@ export class EliminarCuentaUsuarioUseCase {
 
       const normalizedInput = phoneNumber.replace(/\D/g, '');
       const normalizedStored = (usuario.telefono ?? '').replace(/\D/g, '');
-      if (normalizedInput !== normalizedStored) {
+      const phoneMatch = normalizedInput === normalizedStored
+        || normalizedStored.endsWith(normalizedInput)
+        || normalizedInput.endsWith(normalizedStored);
+      if (!phoneMatch) {
         return {
           success: false,
           message: 'Credenciales incorrectas. Verifica tu contraseña y número de teléfono.',
