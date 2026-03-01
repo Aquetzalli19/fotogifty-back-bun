@@ -93,16 +93,14 @@ export class PrismaCustomizacionTemporalRepository implements CustomizacionTempo
 
   async delete(usuarioId: number, cartItemId: string, instanceIndex: number): Promise<boolean> {
     try {
-      await prisma.customizaciones_temporales.delete({
+      await prisma.customizaciones_temporales.deleteMany({
         where: {
-          usuario_id_cart_item_id_instance_index: {
-            usuario_id: usuarioId,
-            cart_item_id: cartItemId,
-            instance_index: instanceIndex
-          }
+          usuario_id: usuarioId,
+          cart_item_id: cartItemId,
+          instance_index: instanceIndex
         }
       });
-      return true;
+      return true; // deleteMany no lanza error si el registro no existe
     } catch (error) {
       console.error('Error deleting customizacion temporal:', error);
       return false;
