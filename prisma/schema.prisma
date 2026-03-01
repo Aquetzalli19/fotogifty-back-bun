@@ -20,6 +20,8 @@ model usuarios {
   fecha_ultima_conexion    DateTime?                     @db.DateTime
   token_recuperacion       String?                       @db.VarChar(255)
   fecha_expiracion_token   DateTime?                     @db.DateTime
+  cuenta_eliminada         Boolean                       @default(false)
+  fecha_eliminacion        DateTime?
   administrador            administradores?
   aceptaciones_terminos    aceptaciones_terminos[]
   direcciones              direcciones[]
@@ -413,4 +415,12 @@ model social_links {
 
   @@unique([footer_config_id, plataforma], map: "unique_platform")
   @@index([footer_config_id], map: "idx_social_links_footer")
+}
+
+model auditoria_eliminaciones {
+  id         Int      @id @default(autoincrement())
+  usuario_id Int
+  timestamp  DateTime @default(now())
+  ip         String?  @db.VarChar(45)
+  user_agent String?  @db.Text
 }

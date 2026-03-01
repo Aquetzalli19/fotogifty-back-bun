@@ -8,4 +8,6 @@ export interface UsuarioRepositoryPort {
   updatePassword(id: number, hashedPassword: string): Promise<Usuario | null>;
   updateLastLogin(id: number): Promise<void>;
   updateRecoveryToken(id: number, token: string, expiration: Date): Promise<void>;
+  tienePedidosActivos(id: number): Promise<boolean>;
+  eliminarCuenta(id: number, ip?: string, userAgent?: string): Promise<void>;
 }

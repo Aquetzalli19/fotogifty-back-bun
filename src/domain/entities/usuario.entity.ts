@@ -14,6 +14,8 @@ export interface Usuario {
   fecha_ultima_conexion?: Date;
   token_recuperacion?: string;
   fecha_expiracion_token?: Date;
+  cuenta_eliminada?: boolean;
+  fecha_eliminacion?: Date;
 }
 
 export class UsuarioEntity implements Usuario {

@@ -3,6 +3,7 @@ import { CrearUsuarioUseCase } from '../../application/use-cases/crear-usuario.u
 import { AceptarTerminosUseCase } from '@application/use-cases/aceptar-terminos.use-case';
 import { VerificarPasswordUsuarioUseCase } from '@application/use-cases/verificar-password-usuario.use-case';
 import { ActualizarEmailUsuarioUseCase } from '@application/use-cases/actualizar-email-usuario.use-case';
+import { EliminarCuentaUsuarioUseCase } from '@application/use-cases/eliminar-cuenta-usuario.use-case';
 import { UsuarioRepositoryPort } from '../../domain/ports/usuario.repository.port';
 import { UsuarioEntity } from '../../domain/entities/usuario.entity';
 import { TipoUsuario } from '../../domain/entities/tipo-usuario.entity';
@@ -15,7 +16,8 @@ export class UsuarioController {
     private readonly usuarioRepository: UsuarioRepositoryPort,
     private readonly aceptarTerminosUseCase?: AceptarTerminosUseCase,
     private readonly verificarPasswordUseCase?: VerificarPasswordUsuarioUseCase,
-    private readonly actualizarEmailUseCase?: ActualizarEmailUsuarioUseCase
+    private readonly actualizarEmailUseCase?: ActualizarEmailUsuarioUseCase,
+    private readonly eliminarCuentaUseCase?: EliminarCuentaUsuarioUseCase
   ) {}
 
   async crearUsuario(req: Request, res: Response): Promise<void> {
@@ -669,6 +671,69 @@ export class UsuarioController {
         success: false,
         message: 'Error interno del servidor'
       });
+    }
+  }
+
+  async eliminarCuenta(req: Request, res: Response): Promise<void> {
+    try {
+      if (!this.eliminarCuentaUseCase) {
+        res.status(500).json({ success: false, message: 'Servicio no disponible' });
+        return;
+      }
+
+      const { id } = req.params;
+      const usuarioId = parseInt(id);
+      const tokenUserId = req.user?.id;
+
+      if (isNaN(usuarioId)) {
+        res.status(400).json({ success: false, error: 'Datos inválidos', details: { id: 'ID de usuario inválido' } });
+        return;
+      }
+
+      if (tokenUserId !== usuarioId) {
+        res.status(403).json({ success: false, error: 'No tienes permiso para eliminar esta cuenta' });
+        return;
+      }
+
+      const { password, phoneNumber } = req.body;
+
+      const details: Record<string, string> = {};
+      if (!password) {
+        details.password = 'Se requiere la contraseña';
+      }
+      if (!phoneNumber) {
+        details.phoneNumber = 'Se requiere el número de teléfono';
+      } else {
+        const normalizedPhone = String(phoneNumber).replace(/\D/g, '');
+        if (!/^\d{9,11}$/.test(normalizedPhone)) {
+          details.phoneNumber = 'Formato de teléfono inválido';
+        }
+      }
+      if (Object.keys(details).length > 0) {
+        res.status(400).json({ success: false, error: 'Datos inválidos', details });
+        return;
+      }
+
+      const ip = (req.headers['x-forwarded-for'] as string)?.split(',')[0]?.trim()
+        || req.socket.remoteAddress
+        || undefined;
+      const userAgent = req.headers['user-agent'] || undefined;
+
+      const result = await this.eliminarCuentaUseCase.execute(usuarioId, password, phoneNumber, ip, userAgent);
+
+      if (!result.success) {
+        const statusCode =
+          result.error === 'USER_NOT_FOUND' ? 404 :
+          result.error === 'INVALID_CREDENTIALS' ? 401 :
+          result.error === 'ACTIVE_ORDERS' ? 409 : 400;
+        res.status(statusCode).json({ success: false, error: result.message });
+        return;
+      }
+
+      res.status(200).json({ success: true, message: result.message });
+    } catch (error: any) {
+      console.error('Error eliminando cuenta:', error);
+      res.status(500).json({ success: false, message: 'Error interno del servidor' });
     }
   }
 }

@@ -15,8 +15,6 @@ bun install                    # Install dependencies
 bun run dev                    # Dev server with watch mode (--watch)
 bun run build                  # Prisma generate + bun build to dist/
 bun run start                  # Production (runs dist/index.js)
-bun test                       # Run all tests
-bun test path/to/file.test.ts  # Run a single test file
 bun run db:seed                # Seed database
 bunx prisma db push            # Push schema changes (dev, no migration history)
 bunx prisma migrate deploy     # Deploy migrations (prod)
@@ -25,13 +23,15 @@ bunx prisma studio             # Database GUI
 docker compose up -d           # Start MySQL + phpMyAdmin (port 8080)
 ```
 
+> **Note**: There are currently no test files in the codebase. `bun test` will find nothing to run.
+
 ## Architecture — Hexagonal (Ports & Adapters)
 
 ```
 src/
 ├── domain/entities/       # Pure business models (Usuario, Pedido, Paquete, etc.)
 ├── domain/ports/          # Repository interfaces (*.repository.port.ts)
-├── application/use-cases/ # Business logic — one class per operation (59+ use cases)
+├── application/use-cases/ # Business logic — one class per operation (67 use cases)
 ├── infrastructure/
 │   ├── repositories/      # Prisma implementations (prisma-*.repository.ts)
 │   ├── controllers/       # HTTP request handlers
@@ -53,7 +53,7 @@ src/
 - **Repository ports**: Interfaces in `domain/ports/`, Prisma implementations in `infrastructure/repositories/`
 - **Entity mapping**: Repositories use `toDomain()` and `toPrisma()` methods for conversion
 - **Use cases**: Each business operation is a standalone class (e.g., `crear-pedido.use-case.ts`)
-- **Route registration**: All 22 route modules are wired in `infrastructure/routes/index.ts`
+- **Route registration**: All 23 route modules are wired in `infrastructure/routes/index.ts`
 - **Response format**: `{ success: boolean, data?: any, message?: string, code?: string }`
 - **Error handling**: Controllers use try/catch, throw plain `Error` with Spanish messages, return `500` with `error.message`
 
@@ -131,6 +131,15 @@ For database changes: modify `prisma/schema.prisma` → `bunx prisma db push` �
 
 - Swagger UI: `http://localhost:3001/api-docs`
 - Health check: `GET /health`
+
+## Scripts Directory
+
+`scripts/` contains one-off utilities separate from the main app:
+- SQL files for manual schema migrations and data fixes (e.g., `migrate-estados-pedido.sql`, `fix-dpi-existing-photos.sql`)
+- TypeScript scripts for seeding specific tables (`seed-landing-content.ts`, `seed-store-config.ts`)
+- Shell helpers (`cleanup-temp-data.ts` for expired `imagenes_temporales`)
+
+Run TypeScript scripts directly: `bun run scripts/seed-store-config.ts`
 
 ## Deployment
 

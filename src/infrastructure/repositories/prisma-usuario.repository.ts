@@ -17,9 +17,8 @@ export class PrismaUsuarioRepository implements UsuarioRepositoryPort {
   }
 
   async findById(id: number): Promise<Usuario | null> {
-
     const usuario = await prisma.usuarios.findUnique({
-      where: { id },
+      where: { id, cuenta_eliminada: false },
       include: {
         administrador: true,
         stores: true
@@ -143,7 +142,9 @@ export class PrismaUsuarioRepository implements UsuarioRepositoryPort {
       tipo: tipoUsuario,
       fecha_ultima_conexion: prismaUsuario.fecha_ultima_conexion,
       token_recuperacion: prismaUsuario.token_recuperacion,
-      fecha_expiracion_token: prismaUsuario.fecha_expiracion_token
+      fecha_expiracion_token: prismaUsuario.fecha_expiracion_token,
+      cuenta_eliminada: prismaUsuario.cuenta_eliminada,
+      fecha_eliminacion: prismaUsuario.fecha_eliminacion
     };
   }
 
@@ -160,5 +161,42 @@ export class PrismaUsuarioRepository implements UsuarioRepositoryPort {
       token_recuperacion: usuario.token_recuperacion,
       fecha_expiracion_token: usuario.fecha_expiracion_token
     };
+  }
+
+  async tienePedidosActivos(id: number): Promise<boolean> {
+    const count = await prisma.pedidos.count({
+      where: {
+        usuario_id: id,
+        estado: {
+          nombre: { in: ['pendiente_pago', 'en_proceso', 'en_camino'] }
+        }
+      }
+    });
+    return count > 0;
+  }
+
+  async eliminarCuenta(id: number, ip?: string, userAgent?: string): Promise<void> {
+    await prisma.$transaction([
+      prisma.direcciones.deleteMany({ where: { usuario_id: id } }),
+      prisma.usuarios.update({
+        where: { id },
+        data: {
+          email: `usuario_eliminado_${id}@eliminado.local`,
+          password_hash: 'ACCOUNT_DELETED',
+          nombre: '[eliminado]',
+          apellido: '[eliminado]',
+          telefono: null,
+          cuenta_eliminada: true,
+          fecha_eliminacion: new Date()
+        }
+      }),
+      prisma.auditoria_eliminaciones.create({
+        data: {
+          usuario_id: id,
+          ip: ip ?? null,
+          user_agent: userAgent ?? null
+        }
+      })
+    ]);
   }
 }

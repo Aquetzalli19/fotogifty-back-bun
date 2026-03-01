@@ -4,6 +4,7 @@ import { CrearUsuarioUseCase } from '../../application/use-cases/crear-usuario.u
 import { AceptarTerminosUseCase } from '@application/use-cases/aceptar-terminos.use-case';
 import { VerificarPasswordUsuarioUseCase } from '@application/use-cases/verificar-password-usuario.use-case';
 import { ActualizarEmailUsuarioUseCase } from '@application/use-cases/actualizar-email-usuario.use-case';
+import { EliminarCuentaUsuarioUseCase } from '@application/use-cases/eliminar-cuenta-usuario.use-case';
 import { PrismaUsuarioRepository } from '../repositories/prisma-usuario.repository';
 import { PrismaAceptacionTerminosRepository } from '../repositories/prisma-aceptacion-terminos.repository';
 import { PrismaDocumentoLegalRepository } from '../repositories/prisma-documento-legal.repository';
@@ -27,13 +28,15 @@ const usuarioRoutes = (router: Router): void => {
   );
   const verificarPasswordUseCase = new VerificarPasswordUsuarioUseCase(usuarioRepository);
   const actualizarEmailUseCase = new ActualizarEmailUsuarioUseCase(usuarioRepository);
+  const eliminarCuentaUseCase = new EliminarCuentaUsuarioUseCase(usuarioRepository);
 
   const usuarioController = new UsuarioController(
     crearUsuarioUseCase,
     usuarioRepository,
     aceptarTerminosUseCase,
     verificarPasswordUseCase,
-    actualizarEmailUseCase
+    actualizarEmailUseCase,
+    eliminarCuentaUseCase
   );
 
   /**
@@ -558,6 +561,72 @@ const usuarioRoutes = (router: Router): void => {
    */
   router.get('/usuarios', authenticateToken, requireAdmin, (req, res) =>
     usuarioController.getAllUsuarios(req, res)
+  );
+
+  /**
+   * @swagger
+   * /api/usuarios/{id}:
+   *   delete:
+   *     summary: Eliminar cuenta de usuario (anonimización)
+   *     description: Elimina la cuenta del usuario autenticado verificando su contraseña y teléfono. La eliminación es irreversible y anonimiza los datos personales preservando la integridad referencial de los pedidos.
+   *     tags: [Usuarios]
+   *     parameters:
+   *       - in: path
+   *         name: id
+   *         required: true
+   *         schema:
+   *           type: integer
+   *         description: ID del usuario a eliminar
+   *     requestBody:
+   *       required: true
+   *       content:
+   *         application/json:
+   *           schema:
+   *             type: object
+   *             required:
+   *               - password
+   *               - phoneNumber
+   *             properties:
+   *               password:
+   *                 type: string
+   *                 format: password
+   *                 description: Contraseña actual del usuario
+   *                 example: "miContraseña123"
+   *               phoneNumber:
+   *                 type: string
+   *                 description: Teléfono registrado (9–11 dígitos numéricos)
+   *                 example: "612345678"
+   *     security:
+   *       - bearerAuth: []
+   *     responses:
+   *       200:
+   *         description: Cuenta eliminada correctamente
+   *         content:
+   *           application/json:
+   *             schema:
+   *               type: object
+   *               properties:
+   *                 success:
+   *                   type: boolean
+   *                   example: true
+   *                 message:
+   *                   type: string
+   *                   example: "Cuenta eliminada correctamente"
+   *       400:
+   *         description: Faltan campos o formato de teléfono inválido
+   *       401:
+   *         description: Contraseña o teléfono incorrectos
+   *       403:
+   *         description: El token no corresponde al usuario del path
+   *       404:
+   *         description: Usuario no encontrado o ya eliminado
+   *       409:
+   *         description: El usuario tiene pedidos activos
+   *       500:
+   *         description: Error interno del servidor
+   */
+  router.delete('/usuarios/:id', authenticateToken, (req, res) =>
+    usuarioController.eliminarCuenta(req, res)
   );
 };
 
