@@ -10,6 +10,7 @@ import { ObtenerCustomizacionesTemporalesUseCase } from '@application/use-cases/
 import { GuardarCustomizacionTemporalUseCase } from '@application/use-cases/guardar-customizacion-temporal.use-case';
 import { EliminarCustomizacionTemporalUseCase } from '@application/use-cases/eliminar-customizacion-temporal.use-case';
 import { EliminarTodasCustomizacionesTemporalesUseCase } from '@application/use-cases/eliminar-todas-customizaciones-temporales.use-case';
+import { DuplicarCustomizacionTemporalUseCase } from '@application/use-cases/duplicar-customizacion-temporal.use-case';
 import { SubirImagenTemporalUseCase } from '@application/use-cases/subir-imagen-temporal.use-case';
 import { ObtenerUrlImagenTemporalUseCase } from '@application/use-cases/obtener-url-imagen-temporal.use-case';
 import { EliminarImagenTemporalUseCase } from '@application/use-cases/eliminar-imagen-temporal.use-case';
@@ -57,6 +58,7 @@ const carritoTemporalRoutes = (router: Router): void => {
   const guardarCustomizacionUseCase = new GuardarCustomizacionTemporalUseCase(customizacionRepo);
   const eliminarCustomizacionUseCase = new EliminarCustomizacionTemporalUseCase(customizacionRepo);
   const eliminarTodasCustomizacionesUseCase = new EliminarTodasCustomizacionesTemporalesUseCase(customizacionRepo);
+  const duplicarCustomizacionUseCase = new DuplicarCustomizacionTemporalUseCase(customizacionRepo);
 
   // Use Cases - Imágenes
   const subirImagenUseCase = new SubirImagenTemporalUseCase(imagenRepo, s3Service);
@@ -75,7 +77,8 @@ const carritoTemporalRoutes = (router: Router): void => {
     obtenerCustomizacionesUseCase,
     guardarCustomizacionUseCase,
     eliminarCustomizacionUseCase,
-    eliminarTodasCustomizacionesUseCase
+    eliminarTodasCustomizacionesUseCase,
+    duplicarCustomizacionUseCase
   );
 
   const imagenController = new ImagenTemporalController(
@@ -209,6 +212,78 @@ const carritoTemporalRoutes = (router: Router): void => {
    */
   router.put('/customizations/temp/:cartItemId/:instanceIndex', authenticateToken, (req, res) =>
     customizacionController.guardar(req, res)
+  );
+
+  /**
+   * @swagger
+   * /api/customizations/temp/{cartItemId}/duplicate:
+   *   post:
+   *     summary: Duplicar una customización temporal
+   *     tags: [Carrito Temporal]
+   *     security:
+   *       - bearerAuth: []
+   *     parameters:
+   *       - in: path
+   *         name: cartItemId
+   *         required: true
+   *         schema:
+   *           type: string
+   *         description: ID del ítem del carrito
+   *     requestBody:
+   *       required: true
+   *       content:
+   *         application/json:
+   *           schema:
+   *             type: object
+   *             required:
+   *               - sourceInstanceIndex
+   *             properties:
+   *               sourceInstanceIndex:
+   *                 type: integer
+   *                 minimum: 0
+   *                 description: Índice de la customización fuente
+   *               targetInstanceIndex:
+   *                 type: integer
+   *                 minimum: 1
+   *                 maximum: 99
+   *                 description: Índice de destino (opcional; si se omite se asigna automáticamente)
+   *     responses:
+   *       201:
+   *         description: Customización duplicada exitosamente
+   *         content:
+   *           application/json:
+   *             schema:
+   *               type: object
+   *               properties:
+   *                 success:
+   *                   type: boolean
+   *                 data:
+   *                   type: object
+   *                   properties:
+   *                     cartItemId:
+   *                       type: string
+   *                     sourceInstanceIndex:
+   *                       type: integer
+   *                     targetInstanceIndex:
+   *                       type: integer
+   *                     editorType:
+   *                       type: string
+   *                     completed:
+   *                       type: boolean
+   *                     createdAt:
+   *                       type: string
+   *                       format: date-time
+   *                 message:
+   *                   type: string
+   *       400:
+   *         description: Error de validación o límite de instancias superado
+   *       404:
+   *         description: Customización fuente no encontrada
+   *       409:
+   *         description: Ya existe una customización en el índice de destino
+   */
+  router.post('/customizations/temp/:cartItemId/duplicate', authenticateToken, (req, res) =>
+    customizacionController.duplicar(req, res)
   );
 
   /**

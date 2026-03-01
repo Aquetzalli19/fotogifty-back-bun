@@ -1,3 +1,4 @@
+import { PrismaClientKnownRequestError } from '@prisma/client/runtime/library';
 import prisma from '@infrastructure/database/prisma.client';
 import { CustomizacionTemporal, CustomizacionTemporalEntity, CustomizacionData, EditorType } from '@domain/entities/customizacion-temporal.entity';
 import { CustomizacionTemporalRepositoryPort } from '@domain/ports/customizacion-temporal.repository.port';
@@ -129,6 +130,42 @@ export class PrismaCustomizacionTemporalRepository implements CustomizacionTempo
     });
 
     return result.count;
+  }
+
+  async findMaxInstanceIndex(usuarioId: number, cartItemId: string): Promise<number> {
+    const result = await prisma.customizaciones_temporales.aggregate({
+      _max: { instance_index: true },
+      where: { usuario_id: usuarioId, cart_item_id: cartItemId }
+    });
+    return Math.max(result._max.instance_index ?? 0, 0);
+  }
+
+  async createClone(
+    usuarioId: number,
+    cartItemId: string,
+    targetInstanceIndex: number,
+    datos: CustomizacionData,
+    editorType: EditorType,
+    completed: boolean
+  ): Promise<CustomizacionTemporal> {
+    try {
+      const created = await prisma.customizaciones_temporales.create({
+        data: {
+          usuario_id: usuarioId,
+          cart_item_id: cartItemId,
+          instance_index: targetInstanceIndex,
+          editor_type: editorType,
+          datos: datos as any,
+          completed
+        }
+      });
+      return this.toDomain(created);
+    } catch (error) {
+      if (error instanceof PrismaClientKnownRequestError && error.code === 'P2002') {
+        throw new Error('DUPLICATE_INSTANCE_INDEX');
+      }
+      throw error;
+    }
   }
 
   private toDomain(prismaCustomizacion: any): CustomizacionTemporal {
