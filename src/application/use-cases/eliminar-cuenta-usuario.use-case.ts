@@ -26,12 +26,10 @@ export class EliminarCuentaUsuarioUseCase {
         };
       }
 
-      const normalizedInput = phoneNumber.replace(/\D/g, '');
-      const normalizedStored = (usuario.telefono ?? '').replace(/\D/g, '');
-      const phoneMatch = normalizedInput === normalizedStored
-        || normalizedStored.endsWith(normalizedInput)
-        || normalizedInput.endsWith(normalizedStored);
-      if (!phoneMatch) {
+      const normalizarTelefono = (t: string) => t.replace(/\D/g, '').slice(-10);
+      const normalizedInput = normalizarTelefono(phoneNumber);
+      const normalizedStored = normalizarTelefono(usuario.telefono ?? '');
+      if (normalizedInput !== normalizedStored) {
         return {
           success: false,
           message: 'Credenciales incorrectas. Verifica tu contraseña y número de teléfono.',
