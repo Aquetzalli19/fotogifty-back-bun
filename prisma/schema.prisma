@@ -53,12 +53,13 @@ model direcciones {
 }
 
 model categorias {
-  id             Int                     @id @default(autoincrement())
-  nombre         String                  @db.VarChar(100)
-  descripcion    String?                 @db.Text
-  activo         Boolean                 @default(true)
-  fecha_creacion DateTime                @default(now())
-  paquetes       paquetes_predefinidos[]
+  id                   Int                              @id @default(autoincrement())
+  nombre               String                           @db.VarChar(100)
+  descripcion          String?                          @db.Text
+  activo               Boolean                          @default(true)
+  fecha_creacion       DateTime                         @default(now())
+  paquetes             paquetes_predefinidos[]
+  configuraciones_pagina configuracion_pagina_producto[]
 }
 
 model tipo_paquete {
@@ -85,10 +86,11 @@ model paquetes_predefinidos {
   template_key               String?        @db.VarChar(500)
   templates_calendario       Json?
   templates_calendario_keys  Json?
-  items_pedido_new items_pedido[] @relation("items_pedido_to_paquetes_predefinidos_new")
-  items_pedido_old items_pedido[] @relation("items_pedido_to_paquetes_predefinidos_old")
-  categoria        categorias?    @relation(fields: [categoria_id], references: [id])
-  tipo_paquete     tipo_paquete?   @relation(fields: [tipo_paquete_id], references: [id])
+  items_pedido_new       items_pedido[] @relation("items_pedido_to_paquetes_predefinidos_new")
+  items_pedido_old       items_pedido[] @relation("items_pedido_to_paquetes_predefinidos_old")
+  categoria              categorias?    @relation(fields: [categoria_id], references: [id])
+  tipo_paquete           tipo_paquete?  @relation(fields: [tipo_paquete_id], references: [id])
+  configuraciones_pagina configuracion_pagina_producto[]
 
   @@index([categoria_id], map: "paquetes_predefinidos_categoria_id_fkey")
   @@index([tipo_paquete_id], map: "paquetes_predefinidos_tipo_paquete_id_fkey")
@@ -423,4 +425,71 @@ model auditoria_eliminaciones {
   timestamp  DateTime @default(now())
   ip         String?  @db.VarChar(45)
   user_agent String?  @db.Text
+}
+
+enum AlcanceConfigPagina {
+  global
+  categoria
+  producto
+}
+
+model configuracion_pagina_producto {
+  id           Int                          @id @default(autoincrement())
+  nombre       String                       @db.VarChar(255)
+  alcance      AlcanceConfigPagina          @default(global)
+  categoria_id Int?
+  producto_id  Int?
+  activo       Boolean                      @default(true)
+  created_at   DateTime                     @default(now())
+  updated_at   DateTime                     @default(now()) @updatedAt
+  categoria    categorias?                  @relation(fields: [categoria_id], references: [id], onDelete: SetNull)
+  producto     paquetes_predefinidos?       @relation(fields: [producto_id], references: [id], onDelete: SetNull)
+  secciones    secciones_pagina_producto[]
+
+  @@index([alcance, activo])
+}
+
+model secciones_pagina_producto {
+  id              Int                           @id @default(autoincrement())
+  config_id       Int
+  tipo            String                        @db.VarChar(50)
+  titulo          String?                       @db.VarChar(255)
+  activo          Boolean                       @default(true)
+  orden           Int                           @default(0)
+  estilo          Json?
+  configuracion   Json?
+  created_at      DateTime                      @default(now())
+  updated_at      DateTime                      @default(now()) @updatedAt
+  config          configuracion_pagina_producto @relation(fields: [config_id], references: [id], onDelete: Cascade)
+  pestanas        pestanas_contenido[]
+  caracteristicas caracteristicas[]
+
+  @@index([config_id])
+}
+
+model pestanas_contenido {
+  id                   Int                        @id @default(autoincrement())
+  seccion_id           Int
+  titulo               String                     @db.VarChar(255)
+  contenido            String                     @db.Text
+  orden                Int                        @default(0)
+  activo               Boolean                    @default(true)
+  usar_datos_producto  Boolean                    @default(false)
+  campo_datos_producto String?                    @db.VarChar(100)
+  seccion              secciones_pagina_producto  @relation(fields: [seccion_id], references: [id], onDelete: Cascade)
+
+  @@index([seccion_id])
+}
+
+model caracteristicas {
+  id          Int                        @id @default(autoincrement())
+  seccion_id  Int
+  titulo      String                     @db.VarChar(255)
+  descripcion String                     @db.Text
+  icono       String                     @default("Check") @db.VarChar(50)
+  orden       Int                        @default(0)
+  activo      Boolean                    @default(true)
+  seccion     secciones_pagina_producto  @relation(fields: [seccion_id], references: [id], onDelete: Cascade)
+
+  @@index([seccion_id])
 }
