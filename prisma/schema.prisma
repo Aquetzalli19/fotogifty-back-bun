@@ -85,13 +85,74 @@ model paquetes_predefinidos {
   template_key               String?        @db.VarChar(500)
   templates_calendario       Json?
   templates_calendario_keys  Json?
-  items_pedido_new items_pedido[] @relation("items_pedido_to_paquetes_predefinidos_new")
-  items_pedido_old items_pedido[] @relation("items_pedido_to_paquetes_predefinidos_old")
-  categoria        categorias?    @relation(fields: [categoria_id], references: [id])
-  tipo_paquete     tipo_paquete?   @relation(fields: [tipo_paquete_id], references: [id])
+  items_pedido_new      items_pedido[]          @relation("items_pedido_to_paquetes_predefinidos_new")
+  items_pedido_old      items_pedido[]          @relation("items_pedido_to_paquetes_predefinidos_old")
+  categoria             categorias?             @relation(fields: [categoria_id], references: [id])
+  tipo_paquete          tipo_paquete?           @relation(fields: [tipo_paquete_id], references: [id])
+  paquete_page_sections paquete_page_sections[]
+  paquete_page_slides   paquete_page_slides[]
+  paquete_page_options  paquete_page_options[]
 
   @@index([categoria_id], map: "paquetes_predefinidos_categoria_id_fkey")
   @@index([tipo_paquete_id], map: "paquetes_predefinidos_tipo_paquete_id_fkey")
+}
+
+model paquete_page_sections {
+  id                   Int                     @id @default(autoincrement())
+  paquete_id           Int
+  section_key          String                  @db.VarChar(50)
+  titulo               String?                 @db.VarChar(255)
+  subtitulo            String?                 @db.Text
+  descripcion          String?                 @db.Text
+  imagen_principal_url String?                 @db.VarChar(500)
+  orden                Int                     @default(0)
+  activo               Boolean                 @default(true)
+  created_at           DateTime                @default(now())
+  updated_at           DateTime                @default(now()) @updatedAt
+  paquete              paquetes_predefinidos   @relation(fields: [paquete_id], references: [id], onDelete: Cascade)
+
+  @@unique([paquete_id, section_key], map: "uq_paquete_page_sections")
+  @@index([paquete_id], map: "idx_paquete_page_sections_paquete")
+}
+
+model paquete_page_slides {
+  id          Int                    @id @default(autoincrement())
+  paquete_id  Int
+  section_key String                 @db.VarChar(50)
+  tipo        String                 @db.VarChar(30)
+  titulo      String?                @db.VarChar(255)
+  descripcion String?                @db.Text
+  imagen_url  String?                @db.VarChar(500)
+  icono       String?                @db.VarChar(50)
+  orden       Int                    @default(0)
+  activo      Boolean                @default(true)
+  created_at  DateTime               @default(now())
+  updated_at  DateTime               @default(now()) @updatedAt
+  paquete     paquetes_predefinidos  @relation(fields: [paquete_id], references: [id], onDelete: Cascade)
+  options     paquete_page_options[]
+
+  @@index([paquete_id, section_key], map: "idx_paquete_page_slides_section")
+}
+
+model paquete_page_options {
+  id               Int                   @id @default(autoincrement())
+  paquete_id       Int
+  section_key      String                @db.VarChar(50)
+  slide_id         Int?
+  texto            String                @db.VarChar(255)
+  texto_secundario String?               @db.VarChar(255)
+  texto_terciario  String?               @db.VarChar(255)
+  texto_cuarto     String?               @db.VarChar(255)
+  texto_quinto     String?               @db.VarChar(255)
+  orden            Int                   @default(0)
+  activo           Boolean               @default(true)
+  created_at       DateTime              @default(now())
+  updated_at       DateTime              @default(now()) @updatedAt
+  paquete          paquetes_predefinidos @relation(fields: [paquete_id], references: [id], onDelete: Cascade)
+  slide            paquete_page_slides?  @relation(fields: [slide_id], references: [id], onDelete: Cascade)
+
+  @@index([paquete_id, section_key], map: "idx_paquete_page_options_section")
+  @@index([slide_id], map: "idx_paquete_page_options_slide")
 }
 
 model estados_pedido {

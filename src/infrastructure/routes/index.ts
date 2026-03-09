@@ -20,6 +20,7 @@ import aceptacionTerminosRoutes from './aceptacion-terminos.routes';
 import configuracionTiendaRoutes from './configuracion-tienda.routes';
 import landingContentRoutes from './landing-content.routes';
 import productPageContentRoutes from './product-page-content.routes';
+import paquetePageContentRoutes from './paquete-page-content.routes';
 import carritoTemporalRoutes from './carrito-temporal.routes';
 import estadoPedidoRoutes from './estado-pedido.routes';
 import footerRoutes from './footer.routes';
@@ -52,6 +53,7 @@ const configureRoutes = (): Router => {
   configuracionTiendaRoutes(apiRouter);
   landingContentRoutes(apiRouter);
   productPageContentRoutes(apiRouter);
+  paquetePageContentRoutes(apiRouter);
   carritoTemporalRoutes(apiRouter);
   estadoPedidoRoutes(apiRouter);
   footerRoutes(apiRouter);
