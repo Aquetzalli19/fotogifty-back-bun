@@ -272,6 +272,62 @@ model configuracion_tienda {
   actualizado_por         Int?
 }
 
+model product_page_sections {
+  id                   Int                    @id @default(autoincrement())
+  section_key          String                 @unique @db.VarChar(50)
+  titulo               String?                @db.VarChar(255)
+  subtitulo            String?                @db.Text
+  descripcion          String?                @db.Text
+  imagen_principal_url String?                @db.VarChar(500)
+  orden                Int                    @default(0)
+  activo               Boolean                @default(true)
+  created_at           DateTime               @default(now())
+  updated_at           DateTime               @default(now()) @updatedAt
+  slides               product_page_slides[]
+  options              product_page_options[]
+
+  @@index([orden], map: "idx_product_page_sections_orden")
+}
+
+model product_page_slides {
+  id          Int                    @id @default(autoincrement())
+  section_key String                 @db.VarChar(50)
+  tipo        String                 @db.VarChar(30)
+  titulo      String?                @db.VarChar(255)
+  descripcion String?                @db.Text
+  imagen_url  String?                @db.VarChar(500)
+  icono       String?                @db.VarChar(50)
+  orden       Int                    @default(0)
+  activo      Boolean                @default(true)
+  created_at  DateTime               @default(now())
+  updated_at  DateTime               @default(now()) @updatedAt
+  section     product_page_sections  @relation(fields: [section_key], references: [section_key], onDelete: Cascade)
+  options     product_page_options[]
+
+  @@index([section_key], map: "idx_product_page_slides_section")
+  @@index([section_key, orden], map: "idx_product_page_slides_section_orden")
+}
+
+model product_page_options {
+  id               Int                   @id @default(autoincrement())
+  section_key      String                @db.VarChar(50)
+  slide_id         Int?
+  texto            String                @db.VarChar(255)
+  texto_secundario String?               @db.VarChar(255)
+  texto_terciario  String?               @db.VarChar(255)
+  texto_cuarto     String?               @db.VarChar(255)
+  texto_quinto     String?               @db.VarChar(255)
+  orden            Int                   @default(0)
+  activo           Boolean               @default(true)
+  created_at       DateTime              @default(now())
+  updated_at       DateTime              @default(now()) @updatedAt
+  section          product_page_sections @relation(fields: [section_key], references: [section_key], onDelete: Cascade)
+  slide            product_page_slides?  @relation(fields: [slide_id], references: [id], onDelete: Cascade)
+
+  @@index([section_key], map: "idx_product_page_options_section")
+  @@index([slide_id], map: "idx_product_page_options_slide")
+}
+
 model landing_sections {
   id                       Int               @id @default(autoincrement())
   section_key              String            @unique @db.VarChar(50)

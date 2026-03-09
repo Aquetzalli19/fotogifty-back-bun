@@ -19,6 +19,7 @@ import documentoLegalRoutes from './documento-legal.routes';
 import aceptacionTerminosRoutes from './aceptacion-terminos.routes';
 import configuracionTiendaRoutes from './configuracion-tienda.routes';
 import landingContentRoutes from './landing-content.routes';
+import productPageContentRoutes from './product-page-content.routes';
 import carritoTemporalRoutes from './carrito-temporal.routes';
 import estadoPedidoRoutes from './estado-pedido.routes';
 import footerRoutes from './footer.routes';
@@ -50,6 +51,7 @@ const configureRoutes = (): Router => {
   aceptacionTerminosRoutes(apiRouter);
   configuracionTiendaRoutes(apiRouter);
   landingContentRoutes(apiRouter);
+  productPageContentRoutes(apiRouter);
   carritoTemporalRoutes(apiRouter);
   estadoPedidoRoutes(apiRouter);
   footerRoutes(apiRouter);
