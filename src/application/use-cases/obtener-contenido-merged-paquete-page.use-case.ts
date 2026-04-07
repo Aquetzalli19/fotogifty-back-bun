@@ -57,7 +57,7 @@ export class ObtenerContenidoMergedPaquetePageUseCase {
             options: allGlobalOptions.filter(o => o.slide_id === slide.id)
           }));
 
-          return { ...globalSection, slides: slidesWithOptions, options: sectionOptions, _source: 'global' };
+          return { ...globalSection, paquete_id: paqueteId, slides: slidesWithOptions, options: sectionOptions, _source: 'global' };
         })
       );
 

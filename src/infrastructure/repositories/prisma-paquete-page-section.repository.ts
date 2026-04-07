@@ -13,7 +13,7 @@ export class PrismaPaquetePageSectionRepository implements PaquetePageSectionRep
 
   async findByPaqueteIdAndSectionKey(paqueteId: number, sectionKey: string): Promise<PaquetePageSection | null> {
     const row = await prisma.paquete_page_sections.findUnique({
-      where: { uq_paquete_page_sections: { paquete_id: paqueteId, section_key: sectionKey } }
+      where: { paquete_id_section_key: { paquete_id: paqueteId, section_key: sectionKey } }
     });
     return row ? this.toDomain(row) : null;
   }
@@ -28,7 +28,7 @@ export class PrismaPaquetePageSectionRepository implements PaquetePageSectionRep
     if (data.activo !== undefined) upsertData.activo = data.activo;
 
     const row = await prisma.paquete_page_sections.upsert({
-      where: { uq_paquete_page_sections: { paquete_id: paqueteId, section_key: sectionKey } },
+      where: { paquete_id_section_key: { paquete_id: paqueteId, section_key: sectionKey } },
       create: { paquete_id: paqueteId, section_key: sectionKey, orden: 0, activo: true, ...upsertData },
       update: upsertData
     });
@@ -42,7 +42,7 @@ export class PrismaPaquetePageSectionRepository implements PaquetePageSectionRep
       // Delete section-level options
       await prisma.paquete_page_options.deleteMany({ where: { paquete_id: paqueteId, section_key: sectionKey } });
       await prisma.paquete_page_sections.delete({
-        where: { uq_paquete_page_sections: { paquete_id: paqueteId, section_key: sectionKey } }
+        where: { paquete_id_section_key: { paquete_id: paqueteId, section_key: sectionKey } }
       });
       return true;
     } catch {
