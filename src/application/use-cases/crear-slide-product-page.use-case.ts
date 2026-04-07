@@ -9,6 +9,7 @@ interface CreateSlideInput {
   descripcion?: string;
   imagen_url?: string;
   icono?: string;
+  paquete_link_id?: number | null;
   orden?: number;
 }
 
@@ -42,7 +43,8 @@ export class CrearSlideProductPageUseCase {
         input.titulo,
         input.descripcion,
         input.imagen_url,
-        input.icono
+        input.icono,
+        input.paquete_link_id
       );
 
       const created = await this.slideRepository.save(slide);

@@ -89,9 +89,11 @@ model paquetes_predefinidos {
   items_pedido_old      items_pedido[]          @relation("items_pedido_to_paquetes_predefinidos_old")
   categoria             categorias?             @relation(fields: [categoria_id], references: [id])
   tipo_paquete          tipo_paquete?           @relation(fields: [tipo_paquete_id], references: [id])
-  paquete_page_sections paquete_page_sections[]
-  paquete_page_slides   paquete_page_slides[]
-  paquete_page_options  paquete_page_options[]
+  paquete_page_sections        paquete_page_sections[]
+  paquete_page_slides          paquete_page_slides[]          @relation("paquete_page_slides_owner")
+  paquete_page_options         paquete_page_options[]
+  product_page_slides_linked   product_page_slides[]          @relation("product_page_slide_link")
+  paquete_page_slides_linked   paquete_page_slides[]          @relation("paquete_page_slide_link")
 
   @@index([categoria_id], map: "paquetes_predefinidos_categoria_id_fkey")
   @@index([tipo_paquete_id], map: "paquetes_predefinidos_tipo_paquete_id_fkey")
@@ -123,13 +125,15 @@ model paquete_page_slides {
   titulo      String?                @db.VarChar(255)
   descripcion String?                @db.Text
   imagen_url  String?                @db.VarChar(500)
-  icono       String?                @db.VarChar(50)
-  orden       Int                    @default(0)
-  activo      Boolean                @default(true)
-  created_at  DateTime               @default(now())
-  updated_at  DateTime               @default(now()) @updatedAt
-  paquete     paquetes_predefinidos  @relation(fields: [paquete_id], references: [id], onDelete: Cascade)
-  options     paquete_page_options[]
+  icono           String?                @db.VarChar(50)
+  paquete_link_id Int?
+  orden           Int                    @default(0)
+  activo          Boolean                @default(true)
+  created_at      DateTime               @default(now())
+  updated_at      DateTime               @default(now()) @updatedAt
+  paquete         paquetes_predefinidos  @relation("paquete_page_slides_owner", fields: [paquete_id], references: [id], onDelete: Cascade)
+  paquete_link    paquetes_predefinidos? @relation("paquete_page_slide_link", fields: [paquete_link_id], references: [id], onDelete: SetNull)
+  options         paquete_page_options[]
 
   @@index([paquete_id, section_key], map: "idx_paquete_page_slides_section")
 }
@@ -357,13 +361,15 @@ model product_page_slides {
   titulo      String?                @db.VarChar(255)
   descripcion String?                @db.Text
   imagen_url  String?                @db.VarChar(500)
-  icono       String?                @db.VarChar(50)
-  orden       Int                    @default(0)
-  activo      Boolean                @default(true)
-  created_at  DateTime               @default(now())
-  updated_at  DateTime               @default(now()) @updatedAt
-  section     product_page_sections  @relation(fields: [section_key], references: [section_key], onDelete: Cascade)
-  options     product_page_options[]
+  icono           String?                @db.VarChar(50)
+  paquete_link_id Int?
+  orden           Int                    @default(0)
+  activo          Boolean                @default(true)
+  created_at      DateTime               @default(now())
+  updated_at      DateTime               @default(now()) @updatedAt
+  section         product_page_sections  @relation(fields: [section_key], references: [section_key], onDelete: Cascade)
+  paquete_link    paquetes_predefinidos? @relation("product_page_slide_link", fields: [paquete_link_id], references: [id], onDelete: SetNull)
+  options         product_page_options[]
 
   @@index([section_key], map: "idx_product_page_slides_section")
   @@index([section_key, orden], map: "idx_product_page_slides_section_orden")

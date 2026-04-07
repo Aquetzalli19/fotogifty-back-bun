@@ -156,13 +156,14 @@ export class PaquetePageContentController {
     try {
       const paqueteId = this.parsePaqueteId(req, res);
       if (paqueteId === null) return;
-      const { section_key, tipo, titulo, descripcion, imagen_url, icono, orden } = req.body;
+      const { section_key, tipo, titulo, descripcion, imagen_url, icono, paquete_link_id, orden } = req.body;
       if (!section_key || !tipo) {
         res.status(400).json({ success: false, message: 'section_key y tipo son requeridos' });
         return;
       }
       const result = await this.crearSlideUseCase.execute({
         paquete_id: paqueteId, section_key, tipo, titulo, descripcion, imagen_url, icono,
+        paquete_link_id: paquete_link_id !== undefined ? paquete_link_id : undefined,
         orden: orden !== undefined ? parseInt(orden, 10) : undefined
       });
       if (result.success) {

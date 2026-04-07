@@ -102,7 +102,7 @@ export class ProductPageContentController {
 
   async createSlide(req: Request, res: Response): Promise<void> {
     try {
-      const { section_key, tipo, titulo, descripcion, imagen_url, icono, orden } = req.body;
+      const { section_key, tipo, titulo, descripcion, imagen_url, icono, paquete_link_id, orden } = req.body;
 
       if (!section_key || !tipo) {
         res.status(400).json({ success: false, message: 'section_key y tipo son requeridos' });
@@ -116,6 +116,7 @@ export class ProductPageContentController {
         descripcion,
         imagen_url,
         icono,
+        paquete_link_id: paquete_link_id !== undefined ? paquete_link_id : undefined,
         orden: orden ? parseInt(orden, 10) : undefined
       });
 

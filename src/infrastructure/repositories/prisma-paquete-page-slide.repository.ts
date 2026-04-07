@@ -42,6 +42,7 @@ export class PrismaPaquetePageSlideRepository implements PaquetePageSlideReposit
       if (data.descripcion !== undefined) updateData.descripcion = data.descripcion;
       if (data.imagen_url !== undefined) updateData.imagen_url = data.imagen_url;
       if (data.icono !== undefined) updateData.icono = data.icono;
+      if ('paquete_link_id' in data) updateData.paquete_link_id = data.paquete_link_id ?? null;
       if (data.orden !== undefined) updateData.orden = data.orden;
       if (data.activo !== undefined) updateData.activo = data.activo;
       const updated = await prisma.paquete_page_slides.update({ where: { id }, data: updateData });
@@ -87,7 +88,7 @@ export class PrismaPaquetePageSlideRepository implements PaquetePageSlideReposit
     return new PaquetePageSlideEntity(
       row.paquete_id, row.section_key, row.tipo, row.orden, row.activo,
       row.titulo, row.descripcion, row.imagen_url, row.icono,
-      row.id, row.created_at, row.updated_at
+      row.id, row.created_at, row.updated_at, row.paquete_link_id
     );
   }
 
@@ -100,6 +101,7 @@ export class PrismaPaquetePageSlideRepository implements PaquetePageSlideReposit
       descripcion: slide.descripcion,
       imagen_url: slide.imagen_url,
       icono: slide.icono,
+      paquete_link_id: slide.paquete_link_id ?? null,
       orden: slide.orden,
       activo: slide.activo
     };

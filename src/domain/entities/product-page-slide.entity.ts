@@ -6,6 +6,7 @@ export interface ProductPageSlide {
   descripcion?: string;
   imagen_url?: string;
   icono?: string;
+  paquete_link_id?: number | null;
   orden: number;
   activo: boolean;
   created_at?: Date;
@@ -20,6 +21,7 @@ export class ProductPageSlideEntity implements ProductPageSlide {
   public descripcion?: string;
   public imagen_url?: string;
   public icono?: string;
+  public paquete_link_id?: number | null;
   public orden: number;
   public activo: boolean;
   public created_at?: Date;
@@ -36,7 +38,8 @@ export class ProductPageSlideEntity implements ProductPageSlide {
     icono?: string,
     id?: number,
     created_at?: Date,
-    updated_at?: Date
+    updated_at?: Date,
+    paquete_link_id?: number | null
   ) {
     this.id = id;
     this.section_key = section_key;
@@ -45,6 +48,7 @@ export class ProductPageSlideEntity implements ProductPageSlide {
     this.descripcion = descripcion;
     this.imagen_url = imagen_url;
     this.icono = icono;
+    this.paquete_link_id = paquete_link_id;
     this.orden = orden;
     this.activo = activo;
     this.created_at = created_at || new Date();
@@ -59,18 +63,12 @@ export class ProductPageSlideEntity implements ProductPageSlide {
     titulo?: string,
     descripcion?: string,
     imagen_url?: string,
-    icono?: string
+    icono?: string,
+    paquete_link_id?: number | null
   ): ProductPageSlideEntity {
     return new ProductPageSlideEntity(
-      section_key,
-      tipo,
-      orden,
-      activo,
-      titulo,
-      descripcion,
-      imagen_url,
-      icono,
-      undefined
+      section_key, tipo, orden, activo, titulo, descripcion, imagen_url, icono,
+      undefined, undefined, undefined, paquete_link_id
     );
   }
 }

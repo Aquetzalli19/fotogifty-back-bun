@@ -62,6 +62,7 @@ export class ClonarDesdeGlobalPaquetePageUseCase {
             descripcion: s.descripcion,
             imagen_url: s.imagen_url,
             icono: s.icono,
+            paquete_link_id: s.paquete_link_id ?? null,
             orden: s.orden,
             activo: s.activo
           }));

@@ -10,6 +10,7 @@ interface Input {
   descripcion?: string;
   imagen_url?: string;
   icono?: string;
+  paquete_link_id?: number | null;
   orden?: number;
 }
 interface Result { success: boolean; data?: PaquetePageSlide; message?: string; error?: string; }
@@ -30,7 +31,8 @@ export class CrearSlidePaquetePageUseCase {
       const orden = input.orden ?? await this.slideRepository.getNextOrder(input.paquete_id, input.section_key);
       const slide = new PaquetePageSlideEntity(
         input.paquete_id, input.section_key, input.tipo, orden, true,
-        input.titulo, input.descripcion, input.imagen_url, input.icono
+        input.titulo, input.descripcion, input.imagen_url, input.icono,
+        undefined, undefined, undefined, input.paquete_link_id
       );
       const created = await this.slideRepository.save(slide);
       return { success: true, data: created };
